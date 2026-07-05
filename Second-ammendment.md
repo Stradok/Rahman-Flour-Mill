@@ -1,0 +1,1 @@
+make folders for each thing like example in sales page there should be a button that opens a produiction cost and overhead ledger and same for dashborad only graphs and mill operations should be available for view on the page on default all other things should be in folder opened by button
