@@ -65,9 +65,9 @@ export function DailyStockTable() {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.brandId} className="border-t border-muted/15">
+                <tr key={`${row.brandId}:${row.packagingSizeId}`} className="border-t border-muted/15">
                   <td className="py-2.5 pr-3 font-heading font-extrabold text-ink whitespace-nowrap">
-                    {row.brandName}
+                    {row.brandName} · {row.packagingLabel}
                   </td>
                   <td className="py-2.5 px-3 text-right text-ink">
                     {row.openingStockBags.toLocaleString()}

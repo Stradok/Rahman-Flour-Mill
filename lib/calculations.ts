@@ -248,6 +248,9 @@ export function stockByBrandSize(
 export interface DailyStockRow {
   brandId: string;
   brandName: string;
+  packagingSizeId: string;
+  packagingLabel: string;
+  weightKg: number;
   openingStockBags: number;
   productionTodayBags: number;
   salesTodayBags: number;
@@ -259,25 +262,68 @@ export function dailyStockByBrand(
   transactions: Transaction[],
   selectedDate: string // "YYYY-MM-DD"
 ): DailyStockRow[] {
-  const brandNames = new Map<string, string>();
-  for (const p of productionLog) brandNames.set(p.brandId, p.brandName);
-  for (const t of transactions) brandNames.set(t.brandId, t.brandName);
+  const key = (brandId: string, sizeId: string) => `${brandId}:${sizeId}`;
+  const meta = new Map<
+    string,
+    { brandId: string; brandName: string; packagingSizeId: string; packagingLabel: string; weightKg: number }
+  >();
+  for (const p of productionLog) {
+    meta.set(key(p.brandId, p.packagingSizeId), {
+      brandId: p.brandId,
+      brandName: p.brandName,
+      packagingSizeId: p.packagingSizeId,
+      packagingLabel: p.packagingLabel,
+      weightKg: p.weightKg,
+    });
+  }
+  for (const t of transactions) {
+    const k = key(t.brandId, t.packagingSizeId);
+    if (!meta.has(k)) {
+      meta.set(k, {
+        brandId: t.brandId,
+        brandName: t.brandName,
+        packagingSizeId: t.packagingSizeId,
+        packagingLabel: t.packagingLabel,
+        weightKg: t.weightKg,
+      });
+    }
+  }
 
-  return Array.from(brandNames.entries())
-    .map(([brandId, brandName]) => {
+  return Array.from(meta.values())
+    .map(({ brandId, brandName, packagingSizeId, packagingLabel, weightKg }) => {
       const priorProduction = productionLog
-        .filter((p) => p.brandId === brandId && p.date.slice(0, 10) < selectedDate)
+        .filter(
+          (p) =>
+            p.brandId === brandId &&
+            p.packagingSizeId === packagingSizeId &&
+            p.date.slice(0, 10) < selectedDate
+        )
         .reduce((s, p) => s + p.bags, 0);
       const priorSales = transactions
-        .filter((t) => t.brandId === brandId && t.createdAt.slice(0, 10) < selectedDate)
+        .filter(
+          (t) =>
+            t.brandId === brandId &&
+            t.packagingSizeId === packagingSizeId &&
+            t.createdAt.slice(0, 10) < selectedDate
+        )
         .reduce((s, t) => s + t.quantity, 0);
       const openingStockBags = Math.max(priorProduction - priorSales, 0);
 
       const productionTodayBags = productionLog
-        .filter((p) => p.brandId === brandId && p.date.slice(0, 10) === selectedDate)
+        .filter(
+          (p) =>
+            p.brandId === brandId &&
+            p.packagingSizeId === packagingSizeId &&
+            p.date.slice(0, 10) === selectedDate
+        )
         .reduce((s, p) => s + p.bags, 0);
       const salesTodayBags = transactions
-        .filter((t) => t.brandId === brandId && t.createdAt.slice(0, 10) === selectedDate)
+        .filter(
+          (t) =>
+            t.brandId === brandId &&
+            t.packagingSizeId === packagingSizeId &&
+            t.createdAt.slice(0, 10) === selectedDate
+        )
         .reduce((s, t) => s + t.quantity, 0);
 
       const closingStockBags = Math.max(
@@ -288,13 +334,16 @@ export function dailyStockByBrand(
       return {
         brandId,
         brandName,
+        packagingSizeId,
+        packagingLabel,
+        weightKg,
         openingStockBags,
         productionTodayBags,
         salesTodayBags,
         closingStockBags,
       };
     })
-    .sort((a, b) => a.brandName.localeCompare(b.brandName));
+    .sort((a, b) => a.brandName.localeCompare(b.brandName) || a.weightKg - b.weightKg);
 }
 
 // --- Sales search: how much a brand sold in a single day or a date range ---

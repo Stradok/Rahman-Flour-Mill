@@ -257,7 +257,7 @@ export default function HelpPage() {
           {
             icon: "📅",
             title: "Pick any day",
-            body: "Choose a date and see that day's stock movement per brand: Opening Stock (what was on hand at the start of that day), Production Today (bags made that day), Sales (bags sold that day), and Closing Stock (what's left at the end of the day).",
+            body: "Choose a date and see that day's stock movement per brand & size (e.g. \"Premium Atta · 20kg\" and \"Premium Atta · 40kg\" as separate rows): Opening Stock (what was on hand at the start of that day), Production Today (bags made that day), Sales (bags sold that day), and Closing Stock (what's left at the end of the day).",
           },
           {
             icon: "🌾",
