@@ -37,7 +37,16 @@ export interface Transaction {
   creditAmountLeft?: number;
 }
 
-export type OverheadCategory = "logistics" | "electricity" | "labor" | "misc";
+export type OverheadCategory =
+  | "electricity"
+  | "transport"
+  | "bardana"
+  | "unloading"
+  | "packery"
+  | "salary"
+  | "telephone"
+  | "millKhata"
+  | "langarKhata";
 
 export interface CostOverheadEntry {
   id: string;
@@ -49,12 +58,14 @@ export interface CostOverheadEntry {
   note?: string;
 }
 
-export interface WheatInventoryLog {
+export interface ProductionEntry {
   id: string;
   date: string; // YYYY-MM-DD
-  wheatReceivedKg?: number;
-  wheatGrindedKg: number;
-  attaProducedKg: number;
-  attaIssuedKg: number;
+  brandId: string;
+  brandName: string; // snapshot at time of logging
+  packagingSizeId: string;
+  packagingLabel: string; // snapshot at time of logging
+  weightKg: number;
+  bags: number; // number of bags produced, manually entered
   createdAt: string;
 }

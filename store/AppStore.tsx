@@ -8,8 +8,8 @@ import type {
   Brand,
   CostOverheadEntry,
   PackagingSize,
+  ProductionEntry,
   Transaction,
-  WheatInventoryLog,
 } from "@/lib/types";
 
 const DEFAULT_BRANDS: Brand[] = [
@@ -47,10 +47,13 @@ interface AppStoreValue {
   setCostLedger: React.Dispatch<React.SetStateAction<CostOverheadEntry[]>>;
   addCostEntry: (entry: Omit<CostOverheadEntry, "id" | "createdAt">) => void;
   removeCostEntry: (id: string) => void;
+  restoreCostEntry: (entry: CostOverheadEntry) => void;
 
-  wheatLog: WheatInventoryLog[];
-  setWheatLog: React.Dispatch<React.SetStateAction<WheatInventoryLog[]>>;
-  addWheatLogEntry: (entry: Omit<WheatInventoryLog, "id" | "createdAt">) => void;
+  productionLog: ProductionEntry[];
+  setProductionLog: React.Dispatch<React.SetStateAction<ProductionEntry[]>>;
+  addProductionEntry: (entry: Omit<ProductionEntry, "id" | "createdAt">) => void;
+  removeProductionEntry: (id: string) => void;
+  restoreProductionEntry: (entry: ProductionEntry) => void;
 }
 
 const AppStoreContext = createContext<AppStoreValue | null>(null);
@@ -68,8 +71,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     STORAGE_KEYS.costLedger,
     []
   );
-  const [wheatLog, setWheatLog] = useLocalStorageState<WheatInventoryLog[]>(
-    STORAGE_KEYS.wheatLog,
+  const [productionLog, setProductionLog] = useLocalStorageState<ProductionEntry[]>(
+    STORAGE_KEYS.productionLog,
     []
   );
 
@@ -168,14 +171,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [setCostLedger]
   );
 
-  const addWheatLogEntry = useCallback(
-    (entry: Omit<WheatInventoryLog, "id" | "createdAt">) => {
-      setWheatLog((prev) => [
+  const restoreCostEntry = useCallback(
+    (entry: CostOverheadEntry) => {
+      setCostLedger((prev) => (prev.some((e) => e.id === entry.id) ? prev : [entry, ...prev]));
+    },
+    [setCostLedger]
+  );
+
+  const addProductionEntry = useCallback(
+    (entry: Omit<ProductionEntry, "id" | "createdAt">) => {
+      setProductionLog((prev) => [
         { ...entry, id: generateId(), createdAt: new Date().toISOString() },
         ...prev,
       ]);
     },
-    [setWheatLog]
+    [setProductionLog]
+  );
+
+  const removeProductionEntry = useCallback(
+    (id: string) => {
+      setProductionLog((prev) => prev.filter((e) => e.id !== id));
+    },
+    [setProductionLog]
+  );
+
+  const restoreProductionEntry = useCallback(
+    (entry: ProductionEntry) => {
+      setProductionLog((prev) =>
+        prev.some((e) => e.id === entry.id) ? prev : [entry, ...prev]
+      );
+    },
+    [setProductionLog]
   );
 
   const value = useMemo<AppStoreValue>(
@@ -194,9 +220,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCostLedger,
       addCostEntry,
       removeCostEntry,
-      wheatLog,
-      setWheatLog,
-      addWheatLogEntry,
+      restoreCostEntry,
+      productionLog,
+      setProductionLog,
+      addProductionEntry,
+      removeProductionEntry,
+      restoreProductionEntry,
     }),
     [
       brands,
@@ -213,9 +242,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCostLedger,
       addCostEntry,
       removeCostEntry,
-      wheatLog,
-      setWheatLog,
-      addWheatLogEntry,
+      restoreCostEntry,
+      productionLog,
+      setProductionLog,
+      addProductionEntry,
+      removeProductionEntry,
+      restoreProductionEntry,
     ]
   );
 

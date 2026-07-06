@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ClayCard } from "@/components/clay/ClayCard";
 import { ClayButton } from "@/components/clay/ClayButton";
 import { ClayInput } from "@/components/clay/ClayInput";
 import { useAppStore } from "@/store/AppStore";
@@ -18,14 +17,7 @@ export function ProductConfigurator() {
   };
 
   return (
-    <ClayCard accent="violet" className="flex flex-col gap-5">
-      <div>
-        <h2 className="font-heading font-black text-xl text-ink">Product & Packaging</h2>
-        <p className="text-sm text-muted">
-          Configure flour brands, bag sizes, and retail pricing. Feeds the Sales page dropdowns.
-        </p>
-      </div>
-
+    <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3">
         {brands.map((brand) => (
           <BrandRow key={brand.id} brand={brand} />
@@ -45,6 +37,6 @@ export function ProductConfigurator() {
           Add Brand
         </ClayButton>
       </div>
-    </ClayCard>
+    </div>
   );
 }

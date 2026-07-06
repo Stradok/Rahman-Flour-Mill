@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Nunito, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/store/AppStore";
-import { TopNav } from "@/components/nav/TopNav";
+import { Sidebar } from "@/components/nav/Sidebar";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -28,12 +28,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${nunito.variable} ${dmSans.variable} h-full`}>
-      <body className="min-h-full flex flex-col font-body bg-canvas text-ink antialiased">
+      <body className="min-h-full font-body bg-canvas text-ink antialiased">
         <AppProvider>
-          <TopNav />
-          <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-10">
-            {children}
-          </main>
+          <div className="flex min-h-screen lg:flex-row flex-col">
+            <Sidebar />
+            <main className="flex-1 min-w-0 px-4 py-6 sm:px-6 sm:py-10">
+              <div className="max-w-4xl mx-auto">{children}</div>
+            </main>
+          </div>
         </AppProvider>
       </body>
     </html>

@@ -1,15 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { ClayCard } from "@/components/clay/ClayCard";
-import { ClayButton } from "@/components/clay/ClayButton";
-import { ClayInput } from "@/components/clay/ClayInput";
 import { StatFlowCard } from "@/components/clay/StatFlowCard";
-import {
-  cumulativeAttaStats,
-  cumulativeWheatStats,
-  todayWheatAttaStats,
-} from "@/lib/calculations";
+import { cumulativeMillStats, todayMillStats } from "@/lib/calculations";
 import { useAppStore } from "@/store/AppStore";
 
 function TruckIcon() {
@@ -32,66 +25,57 @@ function CalendarIcon() {
 }
 
 export function MillOperationsStats() {
-  const { wheatLog, addWheatLogEntry } = useAppStore();
+  const { costLedger, productionLog, transactions } = useAppStore();
 
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [wheatReceivedKg, setWheatReceivedKg] = useState("");
-  const [wheatGrindedKg, setWheatGrindedKg] = useState("");
-  const [attaProducedKg, setAttaProducedKg] = useState("");
-  const [attaIssuedKg, setAttaIssuedKg] = useState("");
-
-  const wheatStats = cumulativeWheatStats(wheatLog);
-  const attaStats = cumulativeAttaStats(wheatLog);
-  const today = todayWheatAttaStats(wheatLog);
-
-  const handleLog = () => {
-    const grinded = Number(wheatGrindedKg) || 0;
-    const produced = Number(attaProducedKg) || 0;
-    const issued = Number(attaIssuedKg) || 0;
-    if (!grinded && !produced && !issued && !wheatReceivedKg) return;
-
-    addWheatLogEntry({
-      date,
-      wheatReceivedKg: Number(wheatReceivedKg) || undefined,
-      wheatGrindedKg: grinded,
-      attaProducedKg: produced,
-      attaIssuedKg: issued,
-    });
-    setWheatReceivedKg("");
-    setWheatGrindedKg("");
-    setAttaProducedKg("");
-    setAttaIssuedKg("");
-  };
+  const stats = cumulativeMillStats(costLedger, productionLog, transactions);
+  const today = todayMillStats(costLedger, productionLog, transactions);
 
   return (
     <ClayCard accent="sky" className="flex flex-col gap-5">
       <div>
         <h2 className="font-heading font-black text-xl text-ink">Mill Operations</h2>
         <p className="text-sm text-muted">
-          Internal wheat intake &amp; grinding tracker — separate from the government subsidy
-          program.
+          Calculated automatically from the Cost &amp; Overhead Ledger (Raw Wheat + Production)
+          and Sales — nothing to log here manually. Internal only, separate from the government
+          subsidy program.
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <StatFlowCard
           icon={<TruckIcon />}
-          value={`${wheatStats.totalReceived.toLocaleString()} kg`}
+          value={`${stats.wheatReceivedKg.toLocaleString()} kg`}
           label="Total Wheat Received"
           accent="violet"
           subMetrics={[
-            { icon: <GearIcon />, label: "Total Grinded", value: `${wheatStats.totalGrinded.toLocaleString()} kg` },
-            { icon: <ScaleIcon />, label: "Stock / Balance", value: `${wheatStats.stockBalance.toLocaleString()} kg` },
+            {
+              icon: <GearIcon />,
+              label: "Total Grinded",
+              value: `${stats.wheatGrindedKg.toLocaleString()} kg`,
+            },
+            {
+              icon: <ScaleIcon />,
+              label: "Stock / Balance",
+              value: `${stats.wheatStockBalanceKg.toLocaleString()} kg`,
+            },
           ]}
         />
         <StatFlowCard
           icon={<GridIcon />}
-          value={`${attaStats.totalProduced.toLocaleString()} kg`}
+          value={`${stats.attaProducedKg.toLocaleString()} kg`}
           label="Atta Produced"
           accent="emerald"
           subMetrics={[
-            { icon: <BoxIcon />, label: "Atta Issued", value: `${attaStats.totalIssued.toLocaleString()} kg` },
-            { icon: <ScaleIcon />, label: "Stock / Balance", value: `${attaStats.stockBalance.toLocaleString()} kg` },
+            {
+              icon: <BoxIcon />,
+              label: "Atta Issued",
+              value: `${stats.attaIssuedKg.toLocaleString()} kg`,
+            },
+            {
+              icon: <ScaleIcon />,
+              label: "Stock / Balance",
+              value: `${stats.attaStockBalanceKg.toLocaleString()} kg`,
+            },
           ]}
         />
       </div>
@@ -103,48 +87,23 @@ export function MillOperationsStats() {
         accent="sky"
         highlighted
         subMetrics={[
-          { icon: <GridIcon />, label: "Atta Produced Today", value: `${today.attaProducedToday.toLocaleString()} kg` },
-          { icon: <BoxIcon />, label: "Atta Issued Today", value: `${today.attaIssuedToday.toLocaleString()} kg` },
+          {
+            icon: <GridIcon />,
+            label: "Atta Produced Today",
+            value: `${today.attaProducedToday.toLocaleString()} kg`,
+          },
+          {
+            icon: <BoxIcon />,
+            label: "Atta Issued Today",
+            value: `${today.attaIssuedToday.toLocaleString()} kg`,
+          },
         ]}
       />
 
-      <div className="pt-2 border-t border-muted/15 flex flex-col gap-3">
-        <p className="text-sm font-medium text-muted">Log Today&apos;s Activity</p>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 items-end">
-          <ClayInput label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <ClayInput
-            label="Wheat Received"
-            type="number"
-            suffix="kg"
-            value={wheatReceivedKg}
-            onChange={(e) => setWheatReceivedKg(e.target.value)}
-          />
-          <ClayInput
-            label="Wheat Grinded"
-            type="number"
-            suffix="kg"
-            value={wheatGrindedKg}
-            onChange={(e) => setWheatGrindedKg(e.target.value)}
-          />
-          <ClayInput
-            label="Atta Produced"
-            type="number"
-            suffix="kg"
-            value={attaProducedKg}
-            onChange={(e) => setAttaProducedKg(e.target.value)}
-          />
-          <ClayInput
-            label="Atta Issued"
-            type="number"
-            suffix="kg"
-            value={attaIssuedKg}
-            onChange={(e) => setAttaIssuedKg(e.target.value)}
-          />
-        </div>
-        <ClayButton type="button" variant="secondary" onClick={handleLog}>
-          Log Entry
-        </ClayButton>
-      </div>
+      <p className="text-xs text-muted -mt-1">
+        Note: Wheat Grinded is assumed equal to Atta Produced (1:1) — extraction-rate/wastage
+        tracking isn't modeled yet.
+      </p>
     </ClayCard>
   );
 }

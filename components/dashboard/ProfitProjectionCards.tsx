@@ -8,6 +8,7 @@ import {
   marginHealth,
   profitPerBag,
   runwayIndicator,
+  totalBagsProduced,
   totalBagsSold,
   totalOverheadCost,
   totalRawMaterialCost,
@@ -23,14 +24,18 @@ const HEALTH_LABEL = {
 };
 
 export function ProfitProjectionCards() {
-  const { transactions, costLedger } = useAppStore();
+  const { transactions, costLedger, productionLog } = useAppStore();
 
-  const bags = totalBagsSold(transactions);
+  const bagsSold = totalBagsSold(transactions);
+  const bagsProduced = totalBagsProduced(productionLog);
+  // prefer actual production quantity for cost/bag; fall back to sales quantity until production is logged
+  const bagsForCost = bagsProduced > 0 ? bagsProduced : bagsSold;
+
   const revenue = totalRevenue(transactions);
   const totalCost = totalRawMaterialCost(costLedger) + totalOverheadCost(costLedger);
 
-  const perBagCost = costPerBag(totalCost, bags);
-  const avgRetailPerBag = bags > 0 ? revenue / bags : 0;
+  const perBagCost = costPerBag(totalCost, bagsForCost);
+  const avgRetailPerBag = bagsSold > 0 ? revenue / bagsSold : 0;
   const perBagProfit = profitPerBag(avgRetailPerBag, perBagCost);
   const health = marginHealth(perBagProfit, TARGET_MARGIN_PER_BAG);
 
@@ -43,7 +48,8 @@ export function ProfitProjectionCards() {
       <div>
         <h2 className="font-heading font-black text-xl text-ink">Profit Projection</h2>
         <p className="text-sm text-muted">
-          Cost per bag is total cost ÷ bags sold; retail price is the average sale price per bag.
+          Cost per bag is total cost ÷ bags produced (logged in the ledger); retail price is the
+          average sale price per bag.
         </p>
       </div>
 
