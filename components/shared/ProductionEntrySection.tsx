@@ -3,32 +3,31 @@
 import { useState } from "react";
 import { ClayButton } from "@/components/clay/ClayButton";
 import { ClayInput } from "@/components/clay/ClayInput";
-import {
-  productionMixByBrand,
-  totalBagsProduced,
-  totalProductionWeightKg,
-} from "@/lib/calculations";
+import { CollapsibleSection } from "@/components/clay/CollapsibleSection";
+import { ProductionMixTable } from "./ProductionMixTable";
+import { productionMixByBrand, totalBagsProduced } from "@/lib/calculations";
+import { nowDatetimeLocal } from "@/lib/datetime";
 import { useAppStore } from "@/store/AppStore";
-
-const BAR_COLORS = ["bg-violet", "bg-pink", "bg-sky", "bg-emerald", "bg-amber"];
 
 function rowKey(brandId: string, sizeId: string) {
   return `${brandId}:${sizeId}`;
 }
 
 export function ProductionEntrySection() {
-  const { brands, productionLog, addProductionEntry } = useAppStore();
+  const { brands, productionLog, addProductionEntry, lastEnteredBy, setLastEnteredBy } =
+    useAppStore();
 
   const rows = brands.flatMap((brand) =>
     brand.packagingSizes.map((size) => ({ brand, size }))
   );
 
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(nowDatetimeLocal);
   const [bagsByRow, setBagsByRow] = useState<Record<string, string>>({});
+  const [enteredBy, setEnteredBy] = useState("");
 
   const mix = productionMixByBrand(productionLog);
   const total = totalBagsProduced(productionLog);
-  const totalWeight = totalProductionWeightKg(productionLog);
+  const nameValue = enteredBy || lastEnteredBy;
 
   const handleSaveAll = () => {
     let savedAny = false;
@@ -44,36 +43,51 @@ export function ProductionEntrySection() {
           packagingLabel: size.label,
           weightKg: size.weightKg,
           bags: bagCount,
+          enteredBy: nameValue || undefined,
         });
         savedAny = true;
       }
     }
     if (!savedAny) return;
     setBagsByRow({});
+    setDate(nowDatetimeLocal());
+    if (nameValue) setLastEnteredBy(nameValue);
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h3 className="font-heading font-extrabold text-ink">3. Production</h3>
-        <p className="text-sm text-muted">
-          Enter how many bags of every brand/size were made for the period, then save once. The
-          mix below compares them all against each other automatically.
-        </p>
-      </div>
-
+    <CollapsibleSection
+      icon="3️⃣"
+      title="Production"
+      description="Enter bags made per brand/size, then save once."
+      badge={
+        <div className="clay-pressed rounded-[16px] px-4 py-2 shrink-0">
+          <span className="text-xs text-muted font-medium mr-1">Total</span>
+          <span className="font-heading font-black text-pink">{total.toLocaleString()} bags</span>
+        </div>
+      }
+    >
       {rows.length === 0 ? (
         <p className="text-sm text-muted text-center py-4">
           No brands/sizes configured yet — add them from Product &amp; Packaging first.
         </p>
       ) : (
         <>
-          <ClayInput
-            label="Date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ClayInput
+              id="production-datetime"
+              label="Date & Time"
+              type="datetime-local"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+            <ClayInput
+              id="production-entered-by"
+              label="Entered By"
+              value={nameValue}
+              onChange={(e) => setEnteredBy(e.target.value)}
+              placeholder="Your name"
+            />
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {rows.map(({ brand, size }) => {
@@ -100,56 +114,14 @@ export function ProductionEntrySection() {
       )}
 
       <div className="clay-pressed rounded-[20px] p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-muted">Production Mix</span>
-          <span className="text-sm font-heading font-extrabold text-ink">
-            {total.toLocaleString()} bags total
-          </span>
-        </div>
-        {mix.length === 0 && (
-          <p className="text-sm text-muted text-center py-2">No production logged yet.</p>
-        )}
-        {mix.map((row, i) => (
-          <div key={row.brandId} className="flex flex-col gap-1">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-heading font-extrabold text-ink">{row.brandName}</span>
-              <span className="text-muted">
-                {row.bags.toLocaleString()} bags · {row.percentage.toFixed(0)}%
-              </span>
-            </div>
-            <div className="rounded-full h-3 w-full bg-canvas overflow-hidden">
-              <div
-                className={`h-full rounded-full ${BAR_COLORS[i % BAR_COLORS.length]}`}
-                style={{ width: `${Math.max(row.percentage, 2)}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between text-xs text-muted">
-              <span>
-                {row.sizes.map((s, j) => (
-                  <span key={s.packagingSizeId}>
-                    {j > 0 && " · "}
-                    {s.packagingLabel}: {s.bags.toLocaleString()}
-                  </span>
-                ))}
-              </span>
-              <span className="font-medium text-ink">{row.totalWeightKg.toLocaleString()} kg</span>
-            </div>
-          </div>
-        ))}
-        {mix.length > 0 && (
-          <div className="flex items-center justify-between pt-2 border-t border-muted/15">
-            <span className="text-xs font-medium text-muted">Total Production</span>
-            <span className="text-sm font-heading font-extrabold text-ink">
-              {total.toLocaleString()} bags · {totalWeight.toLocaleString()} kg
-            </span>
-          </div>
-        )}
+        <span className="text-sm font-medium text-muted">Production Mix</span>
+        <ProductionMixTable mix={mix} totalBags={total} />
       </div>
 
       <p className="text-xs text-muted text-center">
-        To view, edit, or remove entries you've already logged, see the{" "}
+        To view, edit, or remove entries you&apos;ve already logged, see the{" "}
         <span className="font-extrabold text-violet">Entries</span> page in the sidebar.
       </p>
-    </div>
+    </CollapsibleSection>
   );
 }

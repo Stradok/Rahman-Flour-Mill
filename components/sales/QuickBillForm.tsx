@@ -6,12 +6,13 @@ import { ClayButton } from "@/components/clay/ClayButton";
 import { ClayInput } from "@/components/clay/ClayInput";
 import { ClaySelect } from "@/components/clay/ClaySelect";
 import { subtotal as calcSubtotal, creditAmountLeft } from "@/lib/calculations";
+import { nowDatetimeLocal } from "@/lib/datetime";
 import type { PaymentMethod, PaymentMode } from "@/lib/types";
 import { useAppStore } from "@/store/AppStore";
 import { PaymentSplitFields } from "./PaymentSplitFields";
 
 export function QuickBillForm() {
-  const { brands, addTransaction } = useAppStore();
+  const { brands, addTransaction, lastEnteredBy, setLastEnteredBy } = useAppStore();
 
   const [brandId, setBrandId] = useState("");
   const [sizeId, setSizeId] = useState("");
@@ -21,7 +22,11 @@ export function QuickBillForm() {
   const [customerName, setCustomerName] = useState("");
   const [customerCnic, setCustomerCnic] = useState("");
   const [amountPaid, setAmountPaid] = useState("0");
+  const [saleDateTime, setSaleDateTime] = useState(nowDatetimeLocal);
+  const [enteredBy, setEnteredBy] = useState("");
   const [confirmation, setConfirmation] = useState<string | null>(null);
+
+  const nameValue = enteredBy || lastEnteredBy;
 
   const selectedBrand = brands.find((b) => b.id === brandId);
   const selectedSize = selectedBrand?.packagingSizes.find((s) => s.id === sizeId);
@@ -60,6 +65,8 @@ export function QuickBillForm() {
       customerCnic: paymentMode === "credit" ? customerCnic || undefined : undefined,
       amountPaid: paymentMode === "credit" ? paid : undefined,
       creditAmountLeft: paymentMode === "credit" ? left : undefined,
+      createdAt: saleDateTime,
+      enteredBy: nameValue || undefined,
     });
 
     setConfirmation(`Bill ${tx.billNumber} created — Rs ${total.toLocaleString()}`);
@@ -67,6 +74,8 @@ export function QuickBillForm() {
     setCustomerName("");
     setCustomerCnic("");
     setAmountPaid("0");
+    setSaleDateTime(nowDatetimeLocal());
+    if (nameValue) setLastEnteredBy(nameValue);
     setTimeout(() => setConfirmation(null), 4000);
   };
 
@@ -154,6 +163,23 @@ export function QuickBillForm() {
           setAmountPaid={setAmountPaid}
         />
       )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ClayInput
+          id="sale-datetime"
+          label="Date & Time"
+          type="datetime-local"
+          value={saleDateTime}
+          onChange={(e) => setSaleDateTime(e.target.value)}
+        />
+        <ClayInput
+          id="sale-entered-by"
+          label="Entered By"
+          value={nameValue}
+          onChange={(e) => setEnteredBy(e.target.value)}
+          placeholder="Your name"
+        />
+      </div>
 
       <ClayButton type="button" size="lg" disabled={!canSubmit} onClick={handleSubmit}>
         Confirm Sale

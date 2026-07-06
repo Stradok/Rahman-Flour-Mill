@@ -10,6 +10,7 @@ import type {
   PackagingSize,
   ProductionEntry,
   Transaction,
+  WheatGrindingLog,
 } from "@/lib/types";
 
 const DEFAULT_BRANDS: Brand[] = [
@@ -25,6 +26,9 @@ const DEFAULT_BRANDS: Brand[] = [
 ];
 
 interface AppStoreValue {
+  lastEnteredBy: string;
+  setLastEnteredBy: React.Dispatch<React.SetStateAction<string>>;
+
   brands: Brand[];
   setBrands: React.Dispatch<React.SetStateAction<Brand[]>>;
   addBrand: (name: string) => void;
@@ -39,26 +43,36 @@ interface AppStoreValue {
 
   transactions: Transaction[];
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-  addTransaction: (
-    tx: Omit<Transaction, "id" | "billNumber" | "createdAt">
-  ) => Transaction;
+  addTransaction: (tx: Omit<Transaction, "id" | "billNumber">) => Transaction;
+  removeTransaction: (id: string) => void;
+  restoreTransaction: (tx: Transaction) => void;
 
   costLedger: CostOverheadEntry[];
   setCostLedger: React.Dispatch<React.SetStateAction<CostOverheadEntry[]>>;
-  addCostEntry: (entry: Omit<CostOverheadEntry, "id" | "createdAt">) => void;
+  addCostEntry: (entry: Omit<CostOverheadEntry, "id">) => void;
   removeCostEntry: (id: string) => void;
   restoreCostEntry: (entry: CostOverheadEntry) => void;
 
   productionLog: ProductionEntry[];
   setProductionLog: React.Dispatch<React.SetStateAction<ProductionEntry[]>>;
-  addProductionEntry: (entry: Omit<ProductionEntry, "id" | "createdAt">) => void;
+  addProductionEntry: (entry: Omit<ProductionEntry, "id">) => void;
   removeProductionEntry: (id: string) => void;
   restoreProductionEntry: (entry: ProductionEntry) => void;
+
+  grindingLog: WheatGrindingLog[];
+  setGrindingLog: React.Dispatch<React.SetStateAction<WheatGrindingLog[]>>;
+  addGrindingEntry: (entry: Omit<WheatGrindingLog, "id">) => void;
+  removeGrindingEntry: (id: string) => void;
+  restoreGrindingEntry: (entry: WheatGrindingLog) => void;
 }
 
 const AppStoreContext = createContext<AppStoreValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [lastEnteredBy, setLastEnteredBy] = useLocalStorageState<string>(
+    STORAGE_KEYS.lastEnteredBy,
+    ""
+  );
   const [brands, setBrands] = useLocalStorageState<Brand[]>(
     STORAGE_KEYS.brands,
     DEFAULT_BRANDS
@@ -73,6 +87,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const [productionLog, setProductionLog] = useLocalStorageState<ProductionEntry[]>(
     STORAGE_KEYS.productionLog,
+    []
+  );
+  const [grindingLog, setGrindingLog] = useLocalStorageState<WheatGrindingLog[]>(
+    STORAGE_KEYS.grindingLog,
     []
   );
 
@@ -138,14 +156,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const addTransaction = useCallback(
-    (tx: Omit<Transaction, "id" | "billNumber" | "createdAt">) => {
+    (tx: Omit<Transaction, "id" | "billNumber">) => {
       let created: Transaction;
       setTransactions((prev) => {
         created = {
           ...tx,
           id: generateId(),
           billNumber: generateBillNumber(prev),
-          createdAt: new Date().toISOString(),
         };
         return [created, ...prev];
       });
@@ -154,12 +171,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [setTransactions]
   );
 
+  const removeTransaction = useCallback(
+    (id: string) => {
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+    },
+    [setTransactions]
+  );
+
+  const restoreTransaction = useCallback(
+    (tx: Transaction) => {
+      setTransactions((prev) => (prev.some((t) => t.id === tx.id) ? prev : [tx, ...prev]));
+    },
+    [setTransactions]
+  );
+
   const addCostEntry = useCallback(
-    (entry: Omit<CostOverheadEntry, "id" | "createdAt">) => {
-      setCostLedger((prev) => [
-        { ...entry, id: generateId(), createdAt: new Date().toISOString() },
-        ...prev,
-      ]);
+    (entry: Omit<CostOverheadEntry, "id">) => {
+      setCostLedger((prev) => [{ ...entry, id: generateId() }, ...prev]);
     },
     [setCostLedger]
   );
@@ -179,11 +207,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const addProductionEntry = useCallback(
-    (entry: Omit<ProductionEntry, "id" | "createdAt">) => {
-      setProductionLog((prev) => [
-        { ...entry, id: generateId(), createdAt: new Date().toISOString() },
-        ...prev,
-      ]);
+    (entry: Omit<ProductionEntry, "id">) => {
+      setProductionLog((prev) => [{ ...entry, id: generateId() }, ...prev]);
     },
     [setProductionLog]
   );
@@ -204,8 +229,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [setProductionLog]
   );
 
+  const addGrindingEntry = useCallback(
+    (entry: Omit<WheatGrindingLog, "id">) => {
+      setGrindingLog((prev) => [{ ...entry, id: generateId() }, ...prev]);
+    },
+    [setGrindingLog]
+  );
+
+  const removeGrindingEntry = useCallback(
+    (id: string) => {
+      setGrindingLog((prev) => prev.filter((e) => e.id !== id));
+    },
+    [setGrindingLog]
+  );
+
+  const restoreGrindingEntry = useCallback(
+    (entry: WheatGrindingLog) => {
+      setGrindingLog((prev) => (prev.some((e) => e.id === entry.id) ? prev : [entry, ...prev]));
+    },
+    [setGrindingLog]
+  );
+
   const value = useMemo<AppStoreValue>(
     () => ({
+      lastEnteredBy,
+      setLastEnteredBy,
       brands,
       setBrands,
       addBrand,
@@ -216,6 +264,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       transactions,
       setTransactions,
       addTransaction,
+      removeTransaction,
+      restoreTransaction,
       costLedger,
       setCostLedger,
       addCostEntry,
@@ -226,8 +276,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addProductionEntry,
       removeProductionEntry,
       restoreProductionEntry,
+      grindingLog,
+      setGrindingLog,
+      addGrindingEntry,
+      removeGrindingEntry,
+      restoreGrindingEntry,
     }),
     [
+      lastEnteredBy,
+      setLastEnteredBy,
       brands,
       setBrands,
       addBrand,
@@ -238,6 +295,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       transactions,
       setTransactions,
       addTransaction,
+      removeTransaction,
+      restoreTransaction,
       costLedger,
       setCostLedger,
       addCostEntry,
@@ -248,6 +307,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addProductionEntry,
       removeProductionEntry,
       restoreProductionEntry,
+      grindingLog,
+      setGrindingLog,
+      addGrindingEntry,
+      removeGrindingEntry,
+      restoreGrindingEntry,
     ]
   );
 

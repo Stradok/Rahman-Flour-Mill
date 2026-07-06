@@ -9,18 +9,16 @@ import { PackagingSizeEditor } from "./PackagingSizeEditor";
 
 export function BrandRow({ brand }: { brand: Brand }) {
   const { addPackagingSize, removeBrand } = useAppStore();
-  const [label, setLabel] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [basePrice, setBasePrice] = useState("");
 
   const handleAddSize = () => {
-    if (!label || !weightKg || !basePrice) return;
+    if (!weightKg || !basePrice) return;
     addPackagingSize(brand.id, {
-      label,
+      label: `${weightKg}kg`,
       weightKg: Number(weightKg),
       basePrice: Number(basePrice),
     });
-    setLabel("");
     setWeightKg("");
     setBasePrice("");
   };
@@ -44,14 +42,9 @@ export function BrandRow({ brand }: { brand: Brand }) {
       </div>
 
       <div className="flex flex-col gap-2 pt-2 border-t border-muted/15">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <ClayInput
-            label="New size"
-            placeholder="e.g. 10kg"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-          />
-          <ClayInput
+            id={`brand-${brand.id}-new-weight`}
             label="Weight"
             type="number"
             suffix="kg"
@@ -59,6 +52,7 @@ export function BrandRow({ brand }: { brand: Brand }) {
             onChange={(e) => setWeightKg(e.target.value)}
           />
           <ClayInput
+            id={`brand-${brand.id}-new-price`}
             label="Base price"
             type="number"
             suffix="Rs"

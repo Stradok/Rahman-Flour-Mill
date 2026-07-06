@@ -19,7 +19,8 @@ export type TransactionStatus = "paid" | "credit-pending";
 export interface Transaction {
   id: string;
   billNumber: string;
-  createdAt: string;
+  createdAt: string; // user-editable datetime-local ("YYYY-MM-DDTHH:mm"), defaults to now
+  enteredBy?: string;
   brandId: string;
   brandName: string;
   packagingSizeId: string;
@@ -50,7 +51,8 @@ export type OverheadCategory =
 
 export interface CostOverheadEntry {
   id: string;
-  createdAt: string;
+  createdAt: string; // user-editable datetime-local ("YYYY-MM-DDTHH:mm"), defaults to now
+  enteredBy?: string;
   wheatVolumeKg?: number;
   wheatRatePerKg?: number;
   category?: OverheadCategory;
@@ -60,12 +62,20 @@ export interface CostOverheadEntry {
 
 export interface ProductionEntry {
   id: string;
-  date: string; // YYYY-MM-DD
+  date: string; // user-editable datetime-local ("YYYY-MM-DDTHH:mm"), defaults to now
+  enteredBy?: string;
   brandId: string;
   brandName: string; // snapshot at time of logging
   packagingSizeId: string;
   packagingLabel: string; // snapshot at time of logging
   weightKg: number;
   bags: number; // number of bags produced, manually entered
-  createdAt: string;
+}
+
+export interface WheatGrindingLog {
+  id: string;
+  date: string; // user-editable datetime-local ("YYYY-MM-DDTHH:mm"), defaults to now
+  enteredBy?: string;
+  wheatGrindedKg: number; // mill-wide, not tied to a brand — logged once per day
+  note?: string;
 }

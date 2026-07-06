@@ -25,19 +25,19 @@ function CalendarIcon() {
 }
 
 export function MillOperationsStats() {
-  const { costLedger, productionLog, transactions } = useAppStore();
+  const { costLedger, productionLog, transactions, grindingLog } = useAppStore();
 
-  const stats = cumulativeMillStats(costLedger, productionLog, transactions);
-  const today = todayMillStats(costLedger, productionLog, transactions);
+  const stats = cumulativeMillStats(costLedger, productionLog, transactions, grindingLog);
+  const today = todayMillStats(costLedger, productionLog, transactions, grindingLog);
 
   return (
     <ClayCard accent="sky" className="flex flex-col gap-5">
       <div>
         <h2 className="font-heading font-black text-xl text-ink">Mill Operations</h2>
         <p className="text-sm text-muted">
-          Calculated automatically from the Cost &amp; Overhead Ledger (Raw Wheat + Production)
-          and Sales — nothing to log here manually. Internal only, separate from the government
-          subsidy program.
+          Wheat Received, Atta Produced, and Atta Issued are calculated automatically from the
+          Cost &amp; Overhead Ledger and Sales. Wheat Grinded comes from the Daily Grinding entry
+          you log each day. Internal only, separate from the government subsidy program.
         </p>
       </div>
 
@@ -99,11 +99,6 @@ export function MillOperationsStats() {
           },
         ]}
       />
-
-      <p className="text-xs text-muted -mt-1">
-        Note: Wheat Grinded is assumed equal to Atta Produced (1:1) — extraction-rate/wastage
-        tracking isn't modeled yet.
-      </p>
     </ClayCard>
   );
 }

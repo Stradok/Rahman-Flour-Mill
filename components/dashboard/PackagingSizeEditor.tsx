@@ -8,28 +8,23 @@ import { useAppStore } from "@/store/AppStore";
 
 export function PackagingSizeEditor({ brandId, size }: { brandId: string; size: PackagingSize }) {
   const { updatePackagingSize, removePackagingSize } = useAppStore();
-  const [label, setLabel] = useState(size.label);
   const [weightKg, setWeightKg] = useState(String(size.weightKg));
   const [basePrice, setBasePrice] = useState(String(size.basePrice));
 
   const commit = () => {
+    const weight = Number(weightKg) || 0;
     updatePackagingSize(brandId, size.id, {
-      label,
-      weightKg: Number(weightKg) || 0,
+      label: `${weight}kg`,
+      weightKg: weight,
       basePrice: Number(basePrice) || 0,
     });
   };
 
   return (
     <div className="clay-pressed rounded-[18px] p-3 flex flex-col gap-2">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <ClayInput
-          label="Label"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          onBlur={commit}
-        />
-        <ClayInput
+          id={`size-${size.id}-weight`}
           label="Weight"
           type="number"
           suffix="kg"
@@ -38,6 +33,7 @@ export function PackagingSizeEditor({ brandId, size }: { brandId: string; size: 
           onBlur={commit}
         />
         <ClayInput
+          id={`size-${size.id}-price`}
           label="Base price"
           type="number"
           suffix="Rs"

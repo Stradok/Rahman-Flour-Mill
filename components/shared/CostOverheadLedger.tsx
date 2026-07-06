@@ -1,15 +1,15 @@
 import { ExpenseSection } from "./ExpenseSection";
 import { RawWheatSection } from "./RawWheatSection";
 import { ProductionEntrySection } from "./ProductionEntrySection";
+import { DailyGrindingSection } from "./DailyGrindingSection";
 
 export function CostOverheadLedger() {
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-4">
       <ExpenseSection />
-      <div className="border-t border-muted/15" />
       <RawWheatSection />
-      <div className="border-t border-muted/15" />
       <ProductionEntrySection />
+      <DailyGrindingSection />
     </div>
   );
 }

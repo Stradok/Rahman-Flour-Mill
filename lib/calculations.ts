@@ -1,4 +1,11 @@
-import type { CostOverheadEntry, OverheadCategory, ProductionEntry, Transaction } from "./types";
+import type {
+  CostOverheadEntry,
+  OverheadCategory,
+  ProductionEntry,
+  Transaction,
+  WheatGrindingLog,
+} from "./types";
+import { addDaysToDateOnly, todayDateOnly } from "./datetime";
 
 export function subtotal(unitPrice: number, quantity: number): number {
   return unitPrice * quantity;
@@ -28,28 +35,14 @@ export function totalOverheadCost(
   }, 0);
 }
 
-export function costPerBag(totalCost: number, totalBags: number): number {
-  return totalBags > 0 ? totalCost / totalBags : 0;
-}
-
-export function profitPerBag(retailPricePerBag: number, costPerBagValue: number): number {
-  return retailPricePerBag - costPerBagValue;
-}
-
-export type MarginHealth = "below" | "near" | "above";
-
-export function marginHealth(profit: number, target: number): MarginHealth {
-  if (profit >= target) return "above";
-  if (profit >= target * 0.75) return "near";
-  return "below";
-}
-
+// Accepts either a plain date ("YYYY-MM-DD") or a datetime-local string
+// ("YYYY-MM-DDTHH:mm") — always compares by calendar date only.
 export function isToday(dateStr: string): boolean {
-  return dateStr === new Date().toISOString().slice(0, 10);
+  return dateStr.slice(0, 10) === todayDateOnly();
 }
 
-// Mill Operations figures are fully derived from the ledger/production/sales data —
-// no separate manual "wheat log" entry exists.
+// Mill Operations figures are derived from the ledger/production/sales data, plus the
+// manually-logged Daily Grinding entries (grinding is mill-wide, not tied to a brand).
 
 export function totalWheatReceivedKg(entries: CostOverheadEntry[]): number {
   return entries.reduce((s, e) => s + (e.wheatVolumeKg ?? 0), 0);
@@ -63,6 +56,22 @@ export function totalAttaIssuedKg(transactions: Transaction[]): number {
   return transactions.reduce((s, t) => s + t.quantity * t.weightKg, 0);
 }
 
+export function totalWheatGrindedKg(entries: WheatGrindingLog[]): number {
+  return entries.reduce((s, e) => s + e.wheatGrindedKg, 0);
+}
+
+export function todayWheatGrindedKg(entries: WheatGrindingLog[]): number {
+  return entries
+    .filter((e) => isToday(e.date.slice(0, 10)))
+    .reduce((s, e) => s + e.wheatGrindedKg, 0);
+}
+
+export function wheatGrindedOnDate(entries: WheatGrindingLog[], selectedDate: string): number {
+  return entries
+    .filter((e) => e.date.slice(0, 10) === selectedDate)
+    .reduce((s, e) => s + e.wheatGrindedKg, 0);
+}
+
 export interface MillOperationsStatsSummary {
   wheatReceivedKg: number;
   wheatGrindedKg: number;
@@ -72,15 +81,15 @@ export interface MillOperationsStatsSummary {
   attaStockBalanceKg: number;
 }
 
-// Wheat Grinded is assumed 1:1 with Atta Produced (no extraction-rate/wastage modeled yet).
 export function cumulativeMillStats(
   costLedger: CostOverheadEntry[],
   productionLog: ProductionEntry[],
-  transactions: Transaction[]
+  transactions: Transaction[],
+  grindingLog: WheatGrindingLog[]
 ): MillOperationsStatsSummary {
   const wheatReceivedKg = totalWheatReceivedKg(costLedger);
   const attaProducedKg = totalAttaProducedKg(productionLog);
-  const wheatGrindedKg = attaProducedKg;
+  const wheatGrindedKg = totalWheatGrindedKg(grindingLog);
   const attaIssuedKg = totalAttaIssuedKg(transactions);
   return {
     wheatReceivedKg,
@@ -95,40 +104,19 @@ export function cumulativeMillStats(
 export function todayMillStats(
   costLedger: CostOverheadEntry[],
   productionLog: ProductionEntry[],
-  transactions: Transaction[]
+  transactions: Transaction[],
+  grindingLog: WheatGrindingLog[]
 ) {
   const todayCost = costLedger.filter((e) => isToday(e.createdAt.slice(0, 10)));
-  const todayProduction = productionLog.filter((e) => isToday(e.date));
+  const todayProduction = productionLog.filter((e) => isToday(e.date.slice(0, 10)));
   const todayTransactions = transactions.filter((t) => isToday(t.createdAt.slice(0, 10)));
 
-  const wheatReceivedToday = totalWheatReceivedKg(todayCost);
-  const attaProducedToday = totalAttaProducedKg(todayProduction);
   return {
-    wheatReceivedToday,
-    wheatGrindedToday: attaProducedToday,
-    attaProducedToday,
+    wheatReceivedToday: totalWheatReceivedKg(todayCost),
+    wheatGrindedToday: todayWheatGrindedKg(grindingLog),
+    attaProducedToday: totalAttaProducedKg(todayProduction),
     attaIssuedToday: totalAttaIssuedKg(todayTransactions),
   };
-}
-
-export function totalBagsSold(transactions: Transaction[]): number {
-  return transactions.reduce((s, t) => s + t.quantity, 0);
-}
-
-export function totalRevenue(transactions: Transaction[]): number {
-  return transactions.reduce((s, t) => s + t.subtotal, 0);
-}
-
-export function cashOnHand(transactions: Transaction[]): number {
-  return transactions.reduce((s, t) => {
-    if (t.paymentMode === "full") return s + t.subtotal;
-    return s + (t.amountPaid ?? 0);
-  }, 0);
-}
-
-export function runwayIndicator(cash: number, dailyOverheadBurn: number): number {
-  if (dailyOverheadBurn <= 0) return Infinity;
-  return cash / dailyOverheadBurn;
 }
 
 export function totalBagsProduced(entries: ProductionEntry[]): number {
@@ -193,10 +181,6 @@ export function productionMixByBrand(entries: ProductionEntry[]): ProductionMixR
     .sort((a, b) => b.bags - a.bags);
 }
 
-export function totalProductionWeightKg(entries: ProductionEntry[]): number {
-  return entries.reduce((s, e) => s + e.bags * e.weightKg, 0);
-}
-
 // --- Stock check: what's actually left of each brand/size, produced minus sold ---
 
 export interface StockRow {
@@ -259,68 +243,168 @@ export function stockByBrandSize(
     .sort((a, b) => a.brandName.localeCompare(b.brandName) || a.weightKg - b.weightKg);
 }
 
-// --- Monthly business summary (for trend charts & month-over-month comparison) ---
+// --- Daily Stock: per-brand opening/closing stock movement for a chosen day ---
 
-export function monthKey(dateStr: string): string {
-  return dateStr.slice(0, 7); // "YYYY-MM"
+export interface DailyStockRow {
+  brandId: string;
+  brandName: string;
+  openingStockBags: number;
+  productionTodayBags: number;
+  salesTodayBags: number;
+  closingStockBags: number;
 }
 
-export function monthLabel(key: string): string {
-  const [year, month] = key.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
+export function dailyStockByBrand(
+  productionLog: ProductionEntry[],
+  transactions: Transaction[],
+  selectedDate: string // "YYYY-MM-DD"
+): DailyStockRow[] {
+  const brandNames = new Map<string, string>();
+  for (const p of productionLog) brandNames.set(p.brandId, p.brandName);
+  for (const t of transactions) brandNames.set(t.brandId, t.brandName);
+
+  return Array.from(brandNames.entries())
+    .map(([brandId, brandName]) => {
+      const priorProduction = productionLog
+        .filter((p) => p.brandId === brandId && p.date.slice(0, 10) < selectedDate)
+        .reduce((s, p) => s + p.bags, 0);
+      const priorSales = transactions
+        .filter((t) => t.brandId === brandId && t.createdAt.slice(0, 10) < selectedDate)
+        .reduce((s, t) => s + t.quantity, 0);
+      const openingStockBags = Math.max(priorProduction - priorSales, 0);
+
+      const productionTodayBags = productionLog
+        .filter((p) => p.brandId === brandId && p.date.slice(0, 10) === selectedDate)
+        .reduce((s, p) => s + p.bags, 0);
+      const salesTodayBags = transactions
+        .filter((t) => t.brandId === brandId && t.createdAt.slice(0, 10) === selectedDate)
+        .reduce((s, t) => s + t.quantity, 0);
+
+      const closingStockBags = Math.max(
+        openingStockBags + productionTodayBags - salesTodayBags,
+        0
+      );
+
+      return {
+        brandId,
+        brandName,
+        openingStockBags,
+        productionTodayBags,
+        salesTodayBags,
+        closingStockBags,
+      };
+    })
+    .sort((a, b) => a.brandName.localeCompare(b.brandName));
+}
+
+// --- Sales search: how much a brand sold in a single day or a date range ---
+
+export interface SalesSearchResult {
+  bags: number;
+  revenue: number;
+  transactionCount: number;
+}
+
+export function salesForBrandInRange(
+  transactions: Transaction[],
+  brandId: string,
+  fromDate: string, // "YYYY-MM-DD"
+  toDate: string // "YYYY-MM-DD", inclusive
+): SalesSearchResult {
+  const matches = transactions.filter((t) => {
+    if (t.brandId !== brandId) return false;
+    const d = t.createdAt.slice(0, 10);
+    return d >= fromDate && d <= toDate;
   });
+  return {
+    bags: matches.reduce((s, t) => s + t.quantity, 0),
+    revenue: matches.reduce((s, t) => s + t.subtotal, 0),
+    transactionCount: matches.length,
+  };
 }
 
-export interface MonthlySummary {
-  monthKey: string;
-  label: string;
+// --- Sales performance: Daily / Weekly / Monthly / Yearly rollups ---
+
+export function totalRevenue(transactions: Transaction[]): number {
+  return transactions.reduce((s, t) => s + t.subtotal, 0);
+}
+
+export interface SalesRollup {
+  bags: number;
+  revenue: number;
+}
+
+function salesInDateRange(
+  transactions: Transaction[],
+  fromDate: string,
+  toDate: string
+): SalesRollup {
+  const matches = transactions.filter((t) => {
+    const d = t.createdAt.slice(0, 10);
+    return d >= fromDate && d <= toDate;
+  });
+  return {
+    bags: matches.reduce((s, t) => s + t.quantity, 0),
+    revenue: matches.reduce((s, t) => s + t.subtotal, 0),
+  };
+}
+
+export interface SalesPerformanceSummary {
+  daily: SalesRollup;
+  weekly: SalesRollup; // trailing 7 days, including today
+  monthly: SalesRollup; // calendar month to date
+  yearly: SalesRollup; // calendar year to date
+}
+
+export function salesPerformanceSummary(transactions: Transaction[]): SalesPerformanceSummary {
+  const today = todayDateOnly();
+  const weekStart = addDaysToDateOnly(today, -6);
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const yearStart = `${today.slice(0, 4)}-01-01`;
+
+  return {
+    daily: salesInDateRange(transactions, today, today),
+    weekly: salesInDateRange(transactions, weekStart, today),
+    monthly: salesInDateRange(transactions, monthStart, today),
+    yearly: salesInDateRange(transactions, yearStart, today),
+  };
+}
+
+// --- Financial health: all-time cost vs revenue vs profit ---
+
+export interface FinancialHealthSummary {
+  totalRawMaterialCost: number;
+  totalOverheadCost: number;
   totalCost: number;
   totalRevenue: number;
-  bagsSold: number;
-  avgRatePerBag: number;
-  profit: number;
+  netProfit: number;
 }
 
-export function monthlyBusinessSummary(
-  transactions: Transaction[],
-  costLedger: CostOverheadEntry[]
-): MonthlySummary[] {
-  const months = new Map<string, { revenue: number; bagsSold: number; cost: number }>();
-
-  const ensure = (key: string) => {
-    if (!months.has(key)) months.set(key, { revenue: 0, bagsSold: 0, cost: 0 });
-    return months.get(key)!;
+export function financialHealthSummary(
+  costLedger: CostOverheadEntry[],
+  transactions: Transaction[]
+): FinancialHealthSummary {
+  const rawMaterial = totalRawMaterialCost(costLedger);
+  const overhead = totalOverheadCost(costLedger);
+  const revenue = totalRevenue(transactions);
+  return {
+    totalRawMaterialCost: rawMaterial,
+    totalOverheadCost: overhead,
+    totalCost: rawMaterial + overhead,
+    totalRevenue: revenue,
+    netProfit: revenue - (rawMaterial + overhead),
   };
-
-  for (const t of transactions) {
-    ensure(monthKey(t.createdAt)).revenue += t.subtotal;
-    ensure(monthKey(t.createdAt)).bagsSold += t.quantity;
-  }
-  for (const e of costLedger) {
-    const bucket = ensure(monthKey(e.createdAt));
-    if (e.wheatVolumeKg && e.wheatRatePerKg) {
-      bucket.cost += e.wheatVolumeKg * e.wheatRatePerKg;
-    } else if (e.category) {
-      bucket.cost += e.amount;
-    }
-  }
-
-  return Array.from(months.entries())
-    .map(([key, v]) => ({
-      monthKey: key,
-      label: monthLabel(key),
-      totalCost: v.cost,
-      totalRevenue: v.revenue,
-      bagsSold: v.bagsSold,
-      avgRatePerBag: v.bagsSold > 0 ? v.revenue / v.bagsSold : 0,
-      profit: v.revenue - v.cost,
-    }))
-    .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
 }
 
-export function percentChange(current: number, previous: number): number | null {
-  if (previous === 0) return current === 0 ? 0 : null; // null = no meaningful % (nothing to compare against)
-  return ((current - previous) / previous) * 100;
+// --- Aggregate stock remaining across every brand/size ---
+
+export function totalStockRemaining(
+  productionLog: ProductionEntry[],
+  transactions: Transaction[]
+): { bags: number; kg: number } {
+  const rows = stockByBrandSize(productionLog, transactions);
+  return {
+    bags: rows.reduce((s, r) => s + r.stockBags, 0),
+    kg: rows.reduce((s, r) => s + r.stockKg, 0),
+  };
 }
