@@ -78,9 +78,9 @@ export default function HelpPage() {
             body: "The customer still owes money. The list shows their name and how much was billed so you can follow up later.",
           },
           {
-            icon: "↩️",
-            title: "Fixing a mistake",
-            body: "Made a sale with the wrong quantity or brand? Tap × on that transaction to remove it — an Undo button appears at the bottom of the screen for a few seconds in case you didn't mean to.",
+            icon: "👀",
+            title: "View only here",
+            body: "This list is for reference while you're billing — made a sale with the wrong quantity or brand? Remove it from the Entries page instead, where deleting a sale requires typing your name and the reason.",
           },
         ]}
       />
@@ -103,7 +103,7 @@ export default function HelpPage() {
           {
             icon: "2️⃣",
             title: "Section 2 — Raw Wheat",
-            body: "Log how much wheat you bought and at what rate per kg — the app multiplies these to track your raw material cost.",
+            body: "Log how much wheat you bought and at what rate per kg — the app multiplies these to track your raw material cost. Supplier Name and Vehicle Number Plate are required for every purchase, so there's always a record of who delivered the wheat and on what vehicle.",
           },
           {
             icon: "3️⃣",
@@ -130,13 +130,23 @@ export default function HelpPage() {
         items={[
           {
             icon: "📜",
-            title: "A safe place to review and remove entries",
-            body: "Every Expense, Raw Wheat, Production, and Daily Grinding entry you've logged lives here, grouped into four lists — separate from the input forms, so browsing your history can't accidentally add or change anything.",
+            title: "A safe place to review entries",
+            body: "Every Expense, Raw Wheat, Production, Daily Grinding entry, and sale you've logged lives here, grouped into five lists — separate from the input forms, so browsing your history can't accidentally add or change anything.",
+          },
+          {
+            icon: "✍️",
+            title: "Deleting an entry takes a signature",
+            body: "Tap × on any entry — including a sale — and you'll be asked to type your name and the reason before it's removed. This is the only place a sale can be deleted; Quick Bill & Ledger's Recent Transactions is view-only.",
+          },
+          {
+            icon: "📇",
+            title: "Deletion Log",
+            body: "Every confirmed deletion — what was removed, who removed it, and why — is kept in a permanent Deletion Log at the bottom of this page.",
           },
           {
             icon: "↩️",
             title: "Undo",
-            body: "Tap × to remove an entry and a bar appears at the bottom of the screen for a few seconds with an Undo button — tap it to bring the entry straight back if it was a mistake.",
+            body: "After confirming a deletion, a bar appears at the bottom of the screen for a few seconds with an Undo button — tap it to bring the entry straight back if it was a mistake.",
           },
         ]}
       />
@@ -169,6 +179,16 @@ export default function HelpPage() {
             title: "Today / This Week / This Month / This Year",
             body: "Four scannable cards, each showing bags sold and revenue for that period. \"This Week\" is the trailing 7 days (including today); \"This Month\" and \"This Year\" are calendar-to-date.",
           },
+          {
+            icon: "🔎",
+            title: "Tap a card to see the sales behind it",
+            body: "Every figure is clickable — tap it to open the full list of sales (bill number, brand & size, quantity, amount, paid/credit status) that made up that number.",
+          },
+          {
+            icon: "🗓️",
+            title: "Custom Range",
+            body: "Pick any From / Till date to see bags sold and revenue for a specific stretch of time — not just the four fixed periods — and tap the result to see those sales too.",
+          },
         ]}
       />
 
@@ -199,6 +219,11 @@ export default function HelpPage() {
             icon: "⚡",
             title: "Right now, mill-wide",
             body: "Three cards: bags Produced Today, kg Grinded Today (from your Daily Grinding entry), and total Stock Remaining across every brand — the physical picture of the mill at a glance, without digging into Mill Operations.",
+          },
+          {
+            icon: "🔎",
+            title: "Tap a card to see the detail behind it",
+            body: "Produced Today opens the list of today's production entries; Grinded Today opens today's grinding log entries; Stock Remaining opens the full produced-minus-sold breakdown per brand & size.",
           },
         ]}
       />
@@ -237,14 +262,19 @@ export default function HelpPage() {
             body: "These stats track your own wheat and atta handling for your own records — separate from any government subsidy reporting.",
           },
           {
+            icon: "📅",
+            title: "Pick any date",
+            body: "The Date field at the top controls everything below: the two cumulative cards show totals up through that date, and the highlighted card shows what happened on that specific day. Defaults to today — pick an earlier date (e.g. 5 July) to see what things looked like then.",
+          },
+          {
             icon: "⚙️",
             title: "Wheat Received → Grinded → Balance",
-            body: "Grinded is the real figure you logged that day (not an estimate). Balance is Received minus Grinded — what's left of your raw wheat stock.",
+            body: "Grinded is the real figure logged for the selected date (not an estimate). Balance is Received minus Grinded — what was left of the raw wheat stock as of that date.",
           },
           {
             icon: "🧈",
             title: "Atta Produced → Issued → Balance",
-            body: "Produced comes from what you log in the ledger's Production section; Issued comes from bags sold in Quick Bill; Balance is the remaining stock.",
+            body: "Produced comes from what's logged in the ledger's Production section; Issued comes from bags sold in Quick Bill; Balance is the remaining stock — all cumulative up to the selected date.",
           },
         ]}
       />
@@ -289,6 +319,11 @@ export default function HelpPage() {
             icon: "📦",
             title: "Bags remaining, per brand & size",
             body: "A \"Check Stock\" list shows, for every brand/size, how many bags were Produced, how many were Sold, and how many are left — in both bags and kg. It appears on the Quick Bill page (so you can check before confirming a sale) and on Mill Operations.",
+          },
+          {
+            icon: "📅",
+            title: "Pick a date on Mill Operations",
+            body: "On Mill Operations, Check Stock has its own Date field — pick a past date (e.g. 5 August) to see what stock looked like as of that day. On the Quick Bill page it always shows the current, real-time stock so you know what's sellable right now.",
           },
           {
             icon: "🟢🟠🔴",

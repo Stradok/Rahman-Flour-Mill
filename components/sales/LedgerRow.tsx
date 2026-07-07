@@ -2,7 +2,7 @@ import { ClayBadge } from "@/components/clay/ClayBadge";
 import { formatDateTime } from "@/lib/datetime";
 import type { Transaction } from "@/lib/types";
 
-export function LedgerRow({ tx, onRemove }: { tx: Transaction; onRemove: () => void }) {
+export function LedgerRow({ tx, onRemove }: { tx: Transaction; onRemove?: () => void }) {
   return (
     <div className="clay-card rounded-[22px] p-4 flex items-center justify-between gap-4">
       <div className="flex flex-col gap-0.5 min-w-0">
@@ -24,14 +24,16 @@ export function LedgerRow({ tx, onRemove }: { tx: Transaction; onRemove: () => v
             {tx.status === "paid" ? "Paid" : "Credit Pending"}
           </ClayBadge>
         </div>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="text-pink text-sm font-bold"
-          aria-label="Remove transaction"
-        >
-          ×
-        </button>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-pink text-sm font-bold"
+            aria-label="Remove transaction"
+          >
+            ×
+          </button>
+        )}
       </div>
     </div>
   );

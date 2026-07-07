@@ -72,6 +72,14 @@ export function wheatGrindedOnDate(entries: WheatGrindingLog[], selectedDate: st
     .reduce((s, e) => s + e.wheatGrindedKg, 0);
 }
 
+export function grindingEntriesToday(entries: WheatGrindingLog[]): WheatGrindingLog[] {
+  return entries.filter((e) => isToday(e.date));
+}
+
+export function productionEntriesToday(entries: ProductionEntry[]): ProductionEntry[] {
+  return entries.filter((e) => isToday(e.date));
+}
+
 export interface MillOperationsStatsSummary {
   wheatReceivedKg: number;
   wheatGrindedKg: number;
@@ -81,16 +89,20 @@ export interface MillOperationsStatsSummary {
   attaStockBalanceKg: number;
 }
 
+// asOfDate ("YYYY-MM-DD") caps every input to that calendar date or earlier, so the owner can
+// see what the cumulative totals looked like on any given day — defaults to today.
 export function cumulativeMillStats(
   costLedger: CostOverheadEntry[],
   productionLog: ProductionEntry[],
   transactions: Transaction[],
-  grindingLog: WheatGrindingLog[]
+  grindingLog: WheatGrindingLog[],
+  asOfDate: string = todayDateOnly()
 ): MillOperationsStatsSummary {
-  const wheatReceivedKg = totalWheatReceivedKg(costLedger);
-  const attaProducedKg = totalAttaProducedKg(productionLog);
-  const wheatGrindedKg = totalWheatGrindedKg(grindingLog);
-  const attaIssuedKg = totalAttaIssuedKg(transactions);
+  const upToDate = (d: string) => d.slice(0, 10) <= asOfDate;
+  const wheatReceivedKg = totalWheatReceivedKg(costLedger.filter((e) => upToDate(e.createdAt)));
+  const attaProducedKg = totalAttaProducedKg(productionLog.filter((e) => upToDate(e.date)));
+  const wheatGrindedKg = totalWheatGrindedKg(grindingLog.filter((e) => upToDate(e.date)));
+  const attaIssuedKg = totalAttaIssuedKg(transactions.filter((t) => upToDate(t.createdAt)));
   return {
     wheatReceivedKg,
     wheatGrindedKg,
@@ -101,21 +113,23 @@ export function cumulativeMillStats(
   };
 }
 
-export function todayMillStats(
+export function millStatsOnDate(
   costLedger: CostOverheadEntry[],
   productionLog: ProductionEntry[],
   transactions: Transaction[],
-  grindingLog: WheatGrindingLog[]
+  grindingLog: WheatGrindingLog[],
+  date: string
 ) {
-  const todayCost = costLedger.filter((e) => isToday(e.createdAt.slice(0, 10)));
-  const todayProduction = productionLog.filter((e) => isToday(e.date.slice(0, 10)));
-  const todayTransactions = transactions.filter((t) => isToday(t.createdAt.slice(0, 10)));
+  const onDate = (d: string) => d.slice(0, 10) === date;
+  const dateCost = costLedger.filter((e) => onDate(e.createdAt));
+  const dateProduction = productionLog.filter((e) => onDate(e.date));
+  const dateTransactions = transactions.filter((t) => onDate(t.createdAt));
 
   return {
-    wheatReceivedToday: totalWheatReceivedKg(todayCost),
-    wheatGrindedToday: todayWheatGrindedKg(grindingLog),
-    attaProducedToday: totalAttaProducedKg(todayProduction),
-    attaIssuedToday: totalAttaIssuedKg(todayTransactions),
+    wheatReceived: totalWheatReceivedKg(dateCost),
+    wheatGrinded: wheatGrindedOnDate(grindingLog, date),
+    attaProduced: totalAttaProducedKg(dateProduction),
+    attaIssued: totalAttaIssuedKg(dateTransactions),
   };
 }
 
@@ -195,11 +209,15 @@ export interface StockRow {
   stockKg: number;
 }
 
+// asOfDate ("YYYY-MM-DD"), when given, caps production/sales to that calendar date or
+// earlier — omit it for the current, unfiltered totals.
 export function stockByBrandSize(
   productionLog: ProductionEntry[],
-  transactions: Transaction[]
+  transactions: Transaction[],
+  asOfDate?: string
 ): StockRow[] {
   const key = (brandId: string, sizeId: string) => `${brandId}:${sizeId}`;
+  const upToDate = (d: string) => !asOfDate || d.slice(0, 10) <= asOfDate;
   const rows = new Map<string, StockRow>();
 
   const ensure = (
@@ -227,10 +245,12 @@ export function stockByBrandSize(
   };
 
   for (const entry of productionLog) {
+    if (!upToDate(entry.date)) continue;
     ensure(entry.brandId, entry.brandName, entry.packagingSizeId, entry.packagingLabel, entry.weightKg)
       .producedBags += entry.bags;
   }
   for (const t of transactions) {
+    if (!upToDate(t.createdAt)) continue;
     ensure(t.brandId, t.brandName, t.packagingSizeId, t.packagingLabel, t.weightKg).soldBags +=
       t.quantity;
   }
@@ -383,15 +403,31 @@ export interface SalesRollup {
   revenue: number;
 }
 
-function salesInDateRange(
+export interface DateRange {
+  from: string; // "YYYY-MM-DD"
+  to: string; // "YYYY-MM-DD", inclusive
+}
+
+// Newest-first, for drill-down tables.
+export function transactionsInDateRange(
+  transactions: Transaction[],
+  fromDate: string,
+  toDate: string
+): Transaction[] {
+  return transactions
+    .filter((t) => {
+      const d = t.createdAt.slice(0, 10);
+      return d >= fromDate && d <= toDate;
+    })
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function salesInDateRange(
   transactions: Transaction[],
   fromDate: string,
   toDate: string
 ): SalesRollup {
-  const matches = transactions.filter((t) => {
-    const d = t.createdAt.slice(0, 10);
-    return d >= fromDate && d <= toDate;
-  });
+  const matches = transactionsInDateRange(transactions, fromDate, toDate);
   return {
     bags: matches.reduce((s, t) => s + t.quantity, 0),
     revenue: matches.reduce((s, t) => s + t.subtotal, 0),
@@ -405,17 +441,28 @@ export interface SalesPerformanceSummary {
   yearly: SalesRollup; // calendar year to date
 }
 
-export function salesPerformanceSummary(transactions: Transaction[]): SalesPerformanceSummary {
+export function salesPerformancePeriodRanges(): {
+  daily: DateRange;
+  weekly: DateRange;
+  monthly: DateRange;
+  yearly: DateRange;
+} {
   const today = todayDateOnly();
-  const weekStart = addDaysToDateOnly(today, -6);
-  const monthStart = `${today.slice(0, 7)}-01`;
-  const yearStart = `${today.slice(0, 4)}-01-01`;
-
   return {
-    daily: salesInDateRange(transactions, today, today),
-    weekly: salesInDateRange(transactions, weekStart, today),
-    monthly: salesInDateRange(transactions, monthStart, today),
-    yearly: salesInDateRange(transactions, yearStart, today),
+    daily: { from: today, to: today },
+    weekly: { from: addDaysToDateOnly(today, -6), to: today },
+    monthly: { from: `${today.slice(0, 7)}-01`, to: today },
+    yearly: { from: `${today.slice(0, 4)}-01-01`, to: today },
+  };
+}
+
+export function salesPerformanceSummary(transactions: Transaction[]): SalesPerformanceSummary {
+  const ranges = salesPerformancePeriodRanges();
+  return {
+    daily: salesInDateRange(transactions, ranges.daily.from, ranges.daily.to),
+    weekly: salesInDateRange(transactions, ranges.weekly.from, ranges.weekly.to),
+    monthly: salesInDateRange(transactions, ranges.monthly.from, ranges.monthly.to),
+    yearly: salesInDateRange(transactions, ranges.yearly.from, ranges.yearly.to),
   };
 }
 

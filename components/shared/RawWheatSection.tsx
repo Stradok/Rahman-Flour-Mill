@@ -13,6 +13,8 @@ export function RawWheatSection() {
 
   const [wheatVolumeKg, setWheatVolumeKg] = useState("");
   const [wheatRatePerKg, setWheatRatePerKg] = useState("");
+  const [supplierName, setSupplierName] = useState("");
+  const [vehicleNumberPlate, setVehicleNumberPlate] = useState("");
   const [note, setNote] = useState("");
   const [entryDateTime, setEntryDateTime] = useState(nowDatetimeLocal);
   const [enteredBy, setEnteredBy] = useState("");
@@ -20,13 +22,21 @@ export function RawWheatSection() {
   const total = totalRawMaterialCost(costLedger);
   const nameValue = enteredBy || lastEnteredBy;
 
+  const canSubmit =
+    Number(wheatVolumeKg) > 0 &&
+    Number(wheatRatePerKg) > 0 &&
+    supplierName.trim().length > 0 &&
+    vehicleNumberPlate.trim().length > 0;
+
   const handleAdd = () => {
+    if (!canSubmit) return;
     const vol = Number(wheatVolumeKg);
     const rate = Number(wheatRatePerKg);
-    if (!vol || !rate) return;
     addCostEntry({
       wheatVolumeKg: vol,
       wheatRatePerKg: rate,
+      supplierName: supplierName.trim(),
+      vehicleNumberPlate: vehicleNumberPlate.trim(),
       amount: vol * rate,
       note,
       createdAt: entryDateTime,
@@ -34,6 +44,8 @@ export function RawWheatSection() {
     });
     setWheatVolumeKg("");
     setWheatRatePerKg("");
+    setSupplierName("");
+    setVehicleNumberPlate("");
     setNote("");
     setEntryDateTime(nowDatetimeLocal());
     if (nameValue) setLastEnteredBy(nameValue);
@@ -51,7 +63,7 @@ export function RawWheatSection() {
         </div>
       }
     >
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ClayInput
           label="Wheat Volume"
           type="number"
@@ -66,13 +78,31 @@ export function RawWheatSection() {
           value={wheatRatePerKg}
           onChange={(e) => setWheatRatePerKg(e.target.value)}
         />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ClayInput
-          label="Note (optional)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="e.g. Supplier name"
+          id="wheat-supplier-name"
+          label="Supplier Name"
+          value={supplierName}
+          onChange={(e) => setSupplierName(e.target.value)}
+          placeholder="Required"
+        />
+        <ClayInput
+          id="wheat-vehicle-plate"
+          label="Vehicle Number Plate"
+          value={vehicleNumberPlate}
+          onChange={(e) => setVehicleNumberPlate(e.target.value)}
+          placeholder="Required"
         />
       </div>
+
+      <ClayInput
+        label="Note (optional)"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="e.g. Extra remarks"
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ClayInput
@@ -91,12 +121,19 @@ export function RawWheatSection() {
         />
       </div>
 
-      <ClayButton type="button" variant="secondary" onClick={handleAdd} className="self-end">
+      <ClayButton
+        type="button"
+        variant="secondary"
+        onClick={handleAdd}
+        disabled={!canSubmit}
+        className="self-end"
+      >
         Add Wheat Purchase
       </ClayButton>
 
       <p className="text-xs text-muted text-center">
-        To view, edit, or remove entries you&apos;ve already logged, see the{" "}
+        Supplier Name and Vehicle Number Plate are required for every wheat purchase. To view,
+        edit, or remove entries you&apos;ve already logged, see the{" "}
         <span className="font-extrabold text-violet">Entries</span> page in the sidebar.
       </p>
     </CollapsibleSection>

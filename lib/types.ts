@@ -55,6 +55,8 @@ export interface CostOverheadEntry {
   enteredBy?: string;
   wheatVolumeKg?: number;
   wheatRatePerKg?: number;
+  supplierName?: string; // required for Raw Wheat entries
+  vehicleNumberPlate?: string; // required for Raw Wheat entries
   category?: OverheadCategory;
   amount: number;
   note?: string;
@@ -78,4 +80,12 @@ export interface WheatGrindingLog {
   enteredBy?: string;
   wheatGrindedKg: number; // mill-wide, not tied to a brand — logged once per day
   note?: string;
+}
+
+export interface DeletionLogEntry {
+  id: string;
+  deletedAt: string; // datetime-local, at the moment the deletion was confirmed
+  summary: string; // what was deleted, e.g. "Electricity — Rs 5,000"
+  deletedBy: string; // typed name, required as an accountability signature
+  reason: string; // typed reason, required
 }

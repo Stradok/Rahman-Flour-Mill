@@ -23,6 +23,7 @@ interface StatFlowCardProps {
   accent?: Accent;
   subMetrics?: [SubMetric, SubMetric];
   highlighted?: boolean;
+  highlightedLabel?: string;
 }
 
 export function StatFlowCard({
@@ -32,6 +33,7 @@ export function StatFlowCard({
   accent = "emerald",
   subMetrics,
   highlighted = false,
+  highlightedLabel = "Today",
 }: StatFlowCardProps) {
   return (
     <div
@@ -41,7 +43,8 @@ export function StatFlowCard({
       <div className={`text-3xl ${ACCENT_TEXT[accent]}`}>{icon}</div>
       <div className={`font-heading font-black text-3xl ${ACCENT_TEXT[accent]}`}>{value}</div>
       <div className="text-sm font-medium text-ink">
-        {label} {highlighted && <span className="underline decoration-sky">Today</span>}
+        {label}{" "}
+        {highlighted && <span className="underline decoration-sky">{highlightedLabel}</span>}
       </div>
 
       {subMetrics && (

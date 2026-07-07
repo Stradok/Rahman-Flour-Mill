@@ -9,7 +9,7 @@ export default function MillOperationsPage() {
     <div className="flex flex-col gap-6">
       <GrindingReminderBanner />
       <MillOperationsStats />
-      <StockCheck />
+      <StockCheck dateSelectable />
       <DailyStockTable />
       <SalesSearch />
     </div>

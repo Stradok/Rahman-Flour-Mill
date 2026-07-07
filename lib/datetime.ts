@@ -20,6 +20,15 @@ export function addDaysToDateOnly(dateOnly: string, days: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+export function formatDateOnlyLabel(dateOnly: string): string {
+  const [year, month, day] = dateOnly.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export function formatDateTime(value: string): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;

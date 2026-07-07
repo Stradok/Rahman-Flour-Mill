@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   productionLog: "flourmill:v1:productionLog",
   grindingLog: "flourmill:v1:grindingLog",
   lastEnteredBy: "flourmill:v1:lastEnteredBy",
+  deletionLog: "flourmill:v1:deletionLog",
 } as const;
 
 export const OVERHEAD_CATEGORY_LABELS: Record<string, string> = {

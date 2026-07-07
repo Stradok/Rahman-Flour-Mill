@@ -7,6 +7,7 @@ import { generateBillNumber, generateId } from "@/lib/id";
 import type {
   Brand,
   CostOverheadEntry,
+  DeletionLogEntry,
   PackagingSize,
   ProductionEntry,
   Transaction,
@@ -64,6 +65,9 @@ interface AppStoreValue {
   addGrindingEntry: (entry: Omit<WheatGrindingLog, "id">) => void;
   removeGrindingEntry: (id: string) => void;
   restoreGrindingEntry: (entry: WheatGrindingLog) => void;
+
+  deletionLog: DeletionLogEntry[];
+  logDeletion: (entry: Omit<DeletionLogEntry, "id">) => void;
 }
 
 const AppStoreContext = createContext<AppStoreValue | null>(null);
@@ -91,6 +95,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const [grindingLog, setGrindingLog] = useLocalStorageState<WheatGrindingLog[]>(
     STORAGE_KEYS.grindingLog,
+    []
+  );
+  const [deletionLog, setDeletionLog] = useLocalStorageState<DeletionLogEntry[]>(
+    STORAGE_KEYS.deletionLog,
     []
   );
 
@@ -250,6 +258,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [setGrindingLog]
   );
 
+  const logDeletion = useCallback(
+    (entry: Omit<DeletionLogEntry, "id">) => {
+      setDeletionLog((prev) => [{ ...entry, id: generateId() }, ...prev]);
+    },
+    [setDeletionLog]
+  );
+
   const value = useMemo<AppStoreValue>(
     () => ({
       lastEnteredBy,
@@ -281,6 +296,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addGrindingEntry,
       removeGrindingEntry,
       restoreGrindingEntry,
+      deletionLog,
+      logDeletion,
     }),
     [
       lastEnteredBy,
@@ -312,6 +329,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addGrindingEntry,
       removeGrindingEntry,
       restoreGrindingEntry,
+      deletionLog,
+      logDeletion,
     ]
   );
 
