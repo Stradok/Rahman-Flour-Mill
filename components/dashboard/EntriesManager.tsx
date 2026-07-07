@@ -4,7 +4,8 @@ import { useState } from "react";
 import { ClayCard } from "@/components/clay/ClayCard";
 import { UndoToast } from "@/components/clay/UndoToast";
 import { DeleteConfirmModal } from "@/components/dashboard/DeleteConfirmModal";
-import { LedgerRow } from "@/components/sales/LedgerRow";
+import { EntryFilters } from "@/components/dashboard/EntryFilters";
+import { TransactionsList } from "@/components/sales/TransactionsList";
 import { OVERHEAD_CATEGORY_LABELS } from "@/lib/constants";
 import { formatDateTime, nowDatetimeLocal } from "@/lib/datetime";
 import { useAppStore } from "@/store/AppStore";
@@ -72,6 +73,7 @@ export function EntriesManager() {
     transactions,
     removeTransaction,
     restoreTransaction,
+    recordCreditPayment,
     deletionLog,
     logDeletion,
   } = useAppStore();
@@ -146,21 +148,42 @@ export function EntriesManager() {
           <h2 className="font-heading font-black text-xl text-ink">Expense Entries</h2>
           <p className="text-sm text-muted">Everything logged under Section 1 — Expense.</p>
         </div>
-        <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
-          {expenseEntries.map((entry) => (
-            <EntryRow
-              key={entry.id}
-              title={OVERHEAD_CATEGORY_LABELS[entry.category!]}
-              meta={entryMeta(entry.createdAt, entry.enteredBy)}
-              note={entry.note}
-              value={`Rs ${entry.amount.toLocaleString()}`}
-              onRemove={() => requestRemoveCost(entry, OVERHEAD_CATEGORY_LABELS[entry.category!])}
-            />
-          ))}
-          {expenseEntries.length === 0 && (
-            <p className="text-sm text-muted text-center py-4">No expenses logged yet.</p>
+        <EntryFilters
+          entries={expenseEntries}
+          idPrefix="expense"
+          searchPlaceholder="Category, note, or entered by"
+          getDate={(entry) => entry.createdAt}
+          getEnteredBy={(entry) => entry.enteredBy}
+          getSearchText={(entry) =>
+            [OVERHEAD_CATEGORY_LABELS[entry.category!], entry.note, entry.enteredBy]
+              .filter(Boolean)
+              .join(" ")
+          }
+        >
+          {(visible) => (
+            <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
+              {visible.map((entry) => (
+                <EntryRow
+                  key={entry.id}
+                  title={OVERHEAD_CATEGORY_LABELS[entry.category!]}
+                  meta={entryMeta(entry.createdAt, entry.enteredBy)}
+                  note={entry.note}
+                  value={`Rs ${entry.amount.toLocaleString()}`}
+                  onRemove={() =>
+                    requestRemoveCost(entry, OVERHEAD_CATEGORY_LABELS[entry.category!])
+                  }
+                />
+              ))}
+              {visible.length === 0 && (
+                <p className="text-sm text-muted text-center py-4">
+                  {expenseEntries.length === 0
+                    ? "No expenses logged yet."
+                    : "No expenses match your search."}
+                </p>
+              )}
+            </div>
           )}
-        </div>
+        </EntryFilters>
       </ClayCard>
 
       <ClayCard accent="violet" className="flex flex-col gap-4">
@@ -168,32 +191,51 @@ export function EntriesManager() {
           <h2 className="font-heading font-black text-xl text-ink">Raw Wheat Entries</h2>
           <p className="text-sm text-muted">Everything logged under Section 2 — Raw Wheat.</p>
         </div>
-        <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
-          {wheatEntries.map((entry) => (
-            <EntryRow
-              key={entry.id}
-              title={`${entry.wheatVolumeKg}kg @ Rs${entry.wheatRatePerKg}/kg`}
-              meta={entryMeta(entry.createdAt, entry.enteredBy)}
-              note={[
-                entry.supplierName && `Supplier: ${entry.supplierName}`,
-                entry.vehicleNumberPlate && `Vehicle: ${entry.vehicleNumberPlate}`,
-                entry.note,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-              value={`Rs ${entry.amount.toLocaleString()}`}
-              onRemove={() =>
-                requestRemoveCost(
-                  entry,
-                  `${entry.wheatVolumeKg}kg wheat purchase from ${entry.supplierName ?? "unknown supplier"}`
-                )
-              }
-            />
-          ))}
-          {wheatEntries.length === 0 && (
-            <p className="text-sm text-muted text-center py-4">No wheat purchases logged yet.</p>
+        <EntryFilters
+          entries={wheatEntries}
+          idPrefix="raw-wheat"
+          searchPlaceholder="Supplier, vehicle number, note, or entered by"
+          getDate={(entry) => entry.createdAt}
+          getEnteredBy={(entry) => entry.enteredBy}
+          getSearchText={(entry) =>
+            [entry.supplierName, entry.vehicleNumberPlate, entry.note, entry.enteredBy]
+              .filter(Boolean)
+              .join(" ")
+          }
+        >
+          {(visible) => (
+            <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
+              {visible.map((entry) => (
+                <EntryRow
+                  key={entry.id}
+                  title={`${entry.wheatVolumeKg}kg @ Rs${entry.wheatRatePerKg}/kg`}
+                  meta={entryMeta(entry.createdAt, entry.enteredBy)}
+                  note={[
+                    entry.supplierName && `Supplier: ${entry.supplierName}`,
+                    entry.vehicleNumberPlate && `Vehicle: ${entry.vehicleNumberPlate}`,
+                    entry.note,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  value={`Rs ${entry.amount.toLocaleString()}`}
+                  onRemove={() =>
+                    requestRemoveCost(
+                      entry,
+                      `${entry.wheatVolumeKg}kg wheat purchase from ${entry.supplierName ?? "unknown supplier"}`
+                    )
+                  }
+                />
+              ))}
+              {visible.length === 0 && (
+                <p className="text-sm text-muted text-center py-4">
+                  {wheatEntries.length === 0
+                    ? "No wheat purchases logged yet."
+                    : "No wheat purchases match your search."}
+                </p>
+              )}
+            </div>
           )}
-        </div>
+        </EntryFilters>
       </ClayCard>
 
       <ClayCard accent="pink" className="flex flex-col gap-4">
@@ -201,20 +243,37 @@ export function EntriesManager() {
           <h2 className="font-heading font-black text-xl text-ink">Production Entries</h2>
           <p className="text-sm text-muted">Everything logged under Section 3 — Production.</p>
         </div>
-        <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
-          {productionLog.map((entry) => (
-            <EntryRow
-              key={entry.id}
-              title={`${entry.brandName} · ${entry.packagingLabel}`}
-              meta={entryMeta(entry.date, entry.enteredBy)}
-              value={`${entry.bags.toLocaleString()} bags`}
-              onRemove={() => requestRemoveProduction(entry)}
-            />
-          ))}
-          {productionLog.length === 0 && (
-            <p className="text-sm text-muted text-center py-4">No production logged yet.</p>
+        <EntryFilters
+          entries={productionLog}
+          idPrefix="production"
+          searchPlaceholder="Brand, size, or entered by"
+          getDate={(entry) => entry.date}
+          getEnteredBy={(entry) => entry.enteredBy}
+          getSearchText={(entry) =>
+            [entry.brandName, entry.packagingLabel, entry.enteredBy].filter(Boolean).join(" ")
+          }
+        >
+          {(visible) => (
+            <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
+              {visible.map((entry) => (
+                <EntryRow
+                  key={entry.id}
+                  title={`${entry.brandName} · ${entry.packagingLabel}`}
+                  meta={entryMeta(entry.date, entry.enteredBy)}
+                  value={`${entry.bags.toLocaleString()} bags`}
+                  onRemove={() => requestRemoveProduction(entry)}
+                />
+              ))}
+              {visible.length === 0 && (
+                <p className="text-sm text-muted text-center py-4">
+                  {productionLog.length === 0
+                    ? "No production logged yet."
+                    : "No production entries match your search."}
+                </p>
+              )}
+            </div>
           )}
-        </div>
+        </EntryFilters>
       </ClayCard>
 
       <ClayCard accent="sky" className="flex flex-col gap-4">
@@ -222,21 +281,36 @@ export function EntriesManager() {
           <h2 className="font-heading font-black text-xl text-ink">Grinding Entries</h2>
           <p className="text-sm text-muted">Everything logged under Section 4 — Daily Grinding.</p>
         </div>
-        <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
-          {grindingLog.map((entry) => (
-            <EntryRow
-              key={entry.id}
-              title="Wheat Grinded"
-              meta={entryMeta(entry.date, entry.enteredBy)}
-              note={entry.note}
-              value={`${entry.wheatGrindedKg.toLocaleString()} kg`}
-              onRemove={() => requestRemoveGrinding(entry)}
-            />
-          ))}
-          {grindingLog.length === 0 && (
-            <p className="text-sm text-muted text-center py-4">No grinding logged yet.</p>
+        <EntryFilters
+          entries={grindingLog}
+          idPrefix="grinding"
+          searchPlaceholder="Note or entered by"
+          getDate={(entry) => entry.date}
+          getEnteredBy={(entry) => entry.enteredBy}
+          getSearchText={(entry) => [entry.note, entry.enteredBy].filter(Boolean).join(" ")}
+        >
+          {(visible) => (
+            <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
+              {visible.map((entry) => (
+                <EntryRow
+                  key={entry.id}
+                  title="Wheat Grinded"
+                  meta={entryMeta(entry.date, entry.enteredBy)}
+                  note={entry.note}
+                  value={`${entry.wheatGrindedKg.toLocaleString()} kg`}
+                  onRemove={() => requestRemoveGrinding(entry)}
+                />
+              ))}
+              {visible.length === 0 && (
+                <p className="text-sm text-muted text-center py-4">
+                  {grindingLog.length === 0
+                    ? "No grinding logged yet."
+                    : "No grinding entries match your search."}
+                </p>
+              )}
+            </div>
           )}
-        </div>
+        </EntryFilters>
       </ClayCard>
 
       <ClayCard accent="emerald" className="flex flex-col gap-4">
@@ -247,14 +321,12 @@ export function EntriesManager() {
             every other entry below.
           </p>
         </div>
-        <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto pr-1">
-          {transactions.map((tx) => (
-            <LedgerRow key={tx.id} tx={tx} onRemove={() => requestRemoveTransaction(tx)} />
-          ))}
-          {transactions.length === 0 && (
-            <p className="text-sm text-muted text-center py-4">No sales recorded yet.</p>
-          )}
-        </div>
+        <TransactionsList
+          transactions={transactions}
+          onRemove={requestRemoveTransaction}
+          onRecordPayment={(tx, amount) => recordCreditPayment(tx.id, amount)}
+          maxHeightClassName="max-h-[320px]"
+        />
       </ClayCard>
 
       <ClayCard className="flex flex-col gap-4">

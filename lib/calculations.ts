@@ -72,12 +72,19 @@ export function wheatGrindedOnDate(entries: WheatGrindingLog[], selectedDate: st
     .reduce((s, e) => s + e.wheatGrindedKg, 0);
 }
 
-export function grindingEntriesToday(entries: WheatGrindingLog[]): WheatGrindingLog[] {
-  return entries.filter((e) => isToday(e.date));
+// date ("YYYY-MM-DD") defaults to today — pass an earlier date to see that day's entries instead.
+export function grindingEntriesToday(
+  entries: WheatGrindingLog[],
+  date: string = todayDateOnly()
+): WheatGrindingLog[] {
+  return entries.filter((e) => e.date.slice(0, 10) === date);
 }
 
-export function productionEntriesToday(entries: ProductionEntry[]): ProductionEntry[] {
-  return entries.filter((e) => isToday(e.date));
+export function productionEntriesToday(
+  entries: ProductionEntry[],
+  date: string = todayDateOnly()
+): ProductionEntry[] {
+  return entries.filter((e) => e.date.slice(0, 10) === date);
 }
 
 export interface MillOperationsStatsSummary {
@@ -193,6 +200,17 @@ export function productionMixByBrand(entries: ProductionEntry[]): ProductionMixR
       };
     })
     .sort((a, b) => b.bags - a.bags);
+}
+
+export function productionInDateRange(
+  entries: ProductionEntry[],
+  fromDate: string,
+  toDate: string
+): ProductionEntry[] {
+  return entries.filter((e) => {
+    const d = e.date.slice(0, 10);
+    return d >= fromDate && d <= toDate;
+  });
 }
 
 // --- Stock check: what's actually left of each brand/size, produced minus sold ---
@@ -422,6 +440,17 @@ export function transactionsInDateRange(
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
+export function costLedgerInDateRange(
+  entries: CostOverheadEntry[],
+  fromDate: string,
+  toDate: string
+): CostOverheadEntry[] {
+  return entries.filter((e) => {
+    const d = e.createdAt.slice(0, 10);
+    return d >= fromDate && d <= toDate;
+  });
+}
+
 export function salesInDateRange(
   transactions: Transaction[],
   fromDate: string,
@@ -496,9 +525,10 @@ export function financialHealthSummary(
 
 export function totalStockRemaining(
   productionLog: ProductionEntry[],
-  transactions: Transaction[]
+  transactions: Transaction[],
+  asOfDate?: string
 ): { bags: number; kg: number } {
-  const rows = stockByBrandSize(productionLog, transactions);
+  const rows = stockByBrandSize(productionLog, transactions, asOfDate);
   return {
     bags: rows.reduce((s, r) => s + r.stockBags, 0),
     kg: rows.reduce((s, r) => s + r.stockKg, 0),

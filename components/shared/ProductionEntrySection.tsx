@@ -4,8 +4,13 @@ import { useState } from "react";
 import { ClayButton } from "@/components/clay/ClayButton";
 import { ClayInput } from "@/components/clay/ClayInput";
 import { CollapsibleSection } from "@/components/clay/CollapsibleSection";
+import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { ProductionMixTable } from "./ProductionMixTable";
-import { productionMixByBrand, totalBagsProduced } from "@/lib/calculations";
+import {
+  productionInDateRange,
+  productionMixByBrand,
+  totalBagsProduced,
+} from "@/lib/calculations";
 import { nowDatetimeLocal } from "@/lib/datetime";
 import { useAppStore } from "@/store/AppStore";
 
@@ -25,8 +30,7 @@ export function ProductionEntrySection() {
   const [bagsByRow, setBagsByRow] = useState<Record<string, string>>({});
   const [enteredBy, setEnteredBy] = useState("");
 
-  const mix = productionMixByBrand(productionLog);
-  const total = totalBagsProduced(productionLog);
+  const allTimeTotal = totalBagsProduced(productionLog);
   const nameValue = enteredBy || lastEnteredBy;
 
   const handleSaveAll = () => {
@@ -62,7 +66,9 @@ export function ProductionEntrySection() {
       badge={
         <div className="clay-pressed rounded-[16px] px-4 py-2 shrink-0">
           <span className="text-xs text-muted font-medium mr-1">Total</span>
-          <span className="font-heading font-black text-pink">{total.toLocaleString()} bags</span>
+          <span className="font-heading font-black text-pink">
+            {allTimeTotal.toLocaleString()} bags
+          </span>
         </div>
       }
     >
@@ -115,7 +121,19 @@ export function ProductionEntrySection() {
 
       <div className="clay-pressed rounded-[20px] p-4 flex flex-col gap-3">
         <span className="text-sm font-medium text-muted">Production Mix</span>
-        <ProductionMixTable mix={mix} totalBags={total} />
+        <PeriodFilter idPrefix="production-entry-mix">
+          {(range) => {
+            const scoped = range
+              ? productionInDateRange(productionLog, range.from, range.to)
+              : productionLog;
+            return (
+              <ProductionMixTable
+                mix={productionMixByBrand(scoped)}
+                totalBags={totalBagsProduced(scoped)}
+              />
+            );
+          }}
+        </PeriodFilter>
       </div>
 
       <p className="text-xs text-muted text-center">

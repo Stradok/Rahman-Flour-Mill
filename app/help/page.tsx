@@ -68,6 +68,11 @@ export default function HelpPage() {
         accent="sky"
         items={[
           {
+            icon: "🔎",
+            title: "Search, Date, and Payment Status",
+            body: "Search matches bill number, customer name, or CNIC — handy for finding a specific credit sale without scrolling. Combine it with the Date and Payment Status filters (e.g. only Credit Pending sales on a given day) to narrow things down fast. Works the same way on the Entries page.",
+          },
+          {
             icon: "🟢",
             title: "\"Paid\" badge",
             body: "The customer paid in full — nothing outstanding.",
@@ -75,12 +80,17 @@ export default function HelpPage() {
           {
             icon: "🟠",
             title: "\"Credit Pending\" badge",
-            body: "The customer still owes money. The list shows their name and how much was billed so you can follow up later.",
+            body: "The customer still owes money. The list shows their name, how much was billed, and how much is still owed so you can follow up later.",
+          },
+          {
+            icon: "✅",
+            title: "Record Payment",
+            body: "Tap Record Payment on a credit sale to log money the customer brings in. It defaults to the full amount still owed — change it if they're only paying part of it. Paying in full flips the badge to \"Paid\"; a partial amount reduces what's owed and the sale stays \"Credit Pending\" so you can record the rest later. This button only shows up on sales that still have credit outstanding.",
           },
           {
             icon: "👀",
-            title: "View only here",
-            body: "This list is for reference while you're billing — made a sale with the wrong quantity or brand? Remove it from the Entries page instead, where deleting a sale requires typing your name and the reason.",
+            title: "Deleting needs Entries",
+            body: "Made a sale with the wrong quantity or brand? Remove it from the Entries page instead, where deleting a sale requires typing your name and the reason.",
           },
         ]}
       />
@@ -134,6 +144,11 @@ export default function HelpPage() {
             body: "Every Expense, Raw Wheat, Production, Daily Grinding entry, and sale you've logged lives here, grouped into five lists — separate from the input forms, so browsing your history can't accidentally add or change anything.",
           },
           {
+            icon: "🔎",
+            title: "Search each list",
+            body: "Every list has its own Search and Date filters — search matches whatever's relevant to that entry type (category, supplier name, vehicle number, brand, note, and more). Lists with more than one person logging entries also get an Entered By filter. Handy once you've got months or years of history and need to find one specific entry fast.",
+          },
+          {
             icon: "✍️",
             title: "Deleting an entry takes a signature",
             body: "Tap × on any entry — including a sale — and you'll be asked to type your name and the reason before it's removed. This is the only place a sale can be deleted; Quick Bill & Ledger's Recent Transactions is view-only.",
@@ -182,7 +197,7 @@ export default function HelpPage() {
           {
             icon: "🔎",
             title: "Tap a card to see the sales behind it",
-            body: "Every figure is clickable — tap it to open the full list of sales (bill number, brand & size, quantity, amount, paid/credit status) that made up that number.",
+            body: "Every figure is clickable — tap it to open the full list of sales (bill number, brand & size, quantity, amount, paid/credit status) that made up that number. Inside that list, use Filter by Brand, Filter by Bag Size, and Filter by Status to narrow it down further — the Bags Sold and Revenue totals update to match.",
           },
           {
             icon: "🗓️",
@@ -200,12 +215,17 @@ export default function HelpPage() {
           {
             icon: "💰",
             title: "Total Cost, Total Revenue, Net Profit",
-            body: "All-time totals, to date. Total Cost is Raw Material + every Expense category combined. Net Profit is Revenue minus Cost — shown in green if positive, red if you're currently running at a loss.",
+            body: "Total Cost is Raw Material + every Expense category combined. Net Profit is Revenue minus Cost — shown in green if positive, red if you're currently running at a loss.",
+          },
+          {
+            icon: "🗓️",
+            title: "All Time / Today / This Week / This Month / This Year / Custom",
+            body: "Pick a timeline to see these figures for just that period instead of all-time — pick Custom and set a From / Till date for any specific stretch.",
           },
           {
             icon: "📐",
             title: "Cost composition bar",
-            body: "A simple split bar showing how much of your Total Cost is Raw Material vs Overhead (Expense categories) — a quick visual on where the money is going.",
+            body: "A simple split bar showing how much of your Total Cost is Raw Material vs Overhead (Expense categories) — a quick visual on where the money is going, for the selected timeline.",
           },
         ]}
       />
@@ -218,12 +238,17 @@ export default function HelpPage() {
           {
             icon: "⚡",
             title: "Right now, mill-wide",
-            body: "Three cards: bags Produced Today, kg Grinded Today (from your Daily Grinding entry), and total Stock Remaining across every brand — the physical picture of the mill at a glance, without digging into Mill Operations.",
+            body: "Three cards: bags Produced, kg Grinded (from your Daily Grinding entry), and total Stock Remaining across every brand — the physical picture of the mill at a glance, without digging into Mill Operations.",
+          },
+          {
+            icon: "📅",
+            title: "Pick any date",
+            body: "Defaults to today. Pick an earlier date to see what was produced and grinded that day, and what Stock Remaining looked like as of that date.",
           },
           {
             icon: "🔎",
             title: "Tap a card to see the detail behind it",
-            body: "Produced Today opens the list of today's production entries; Grinded Today opens today's grinding log entries; Stock Remaining opens the full produced-minus-sold breakdown per brand & size.",
+            body: "Produced opens the list of that day's production entries; Grinded opens that day's grinding log entries; Stock Remaining opens the full produced-minus-sold breakdown per brand & size.",
           },
         ]}
       />
@@ -287,7 +312,7 @@ export default function HelpPage() {
           {
             icon: "📅",
             title: "Pick any day",
-            body: "Choose a date and see that day's stock movement per brand & size (e.g. \"Premium Atta · 20kg\" and \"Premium Atta · 40kg\" as separate rows): Opening Stock (what was on hand at the start of that day), Production Today (bags made that day), Sales (bags sold that day), and Closing Stock (what's left at the end of the day).",
+            body: "Choose a date and see that day's stock movement per brand & size (e.g. \"Premium Atta · 20kg\" and \"Premium Atta · 40kg\" as separate rows): Opening Stock (what was on hand at the start of that day), Production Today (bags made that day) with its Atta Produced (kg) equivalent, Sales (bags sold that day), and Closing Stock (what's left at the end of the day).",
           },
           {
             icon: "🌾",

@@ -8,6 +8,8 @@ interface PaymentSplitFieldsProps {
   setCustomerName: (v: string) => void;
   customerCnic: string;
   setCustomerCnic: (v: string) => void;
+  customerPhone: string;
+  setCustomerPhone: (v: string) => void;
   amountPaid: string;
   setAmountPaid: (v: string) => void;
 }
@@ -18,6 +20,8 @@ export function PaymentSplitFields({
   setCustomerName,
   customerCnic,
   setCustomerCnic,
+  customerPhone,
+  setCustomerPhone,
   amountPaid,
   setAmountPaid,
 }: PaymentSplitFieldsProps) {
@@ -33,6 +37,13 @@ export function PaymentSplitFields({
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
           placeholder="Full name"
+        />
+        <ClayInput
+          label="Phone Number"
+          type="tel"
+          value={customerPhone}
+          onChange={(e) => setCustomerPhone(e.target.value)}
+          placeholder="For payment follow-up"
         />
         <ClayInput
           label="CNIC (optional)"

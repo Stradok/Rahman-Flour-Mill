@@ -1,14 +1,13 @@
 "use client";
 
 import { ClayCard } from "@/components/clay/ClayCard";
+import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { ProductionMixTable } from "@/components/shared/ProductionMixTable";
-import { productionMixByBrand, totalBagsProduced } from "@/lib/calculations";
+import { productionInDateRange, productionMixByBrand, totalBagsProduced } from "@/lib/calculations";
 import { useAppStore } from "@/store/AppStore";
 
 export function ProductionMixChart() {
   const { productionLog } = useAppStore();
-  const mix = productionMixByBrand(productionLog);
-  const total = totalBagsProduced(productionLog);
 
   return (
     <ClayCard accent="pink" className="flex flex-col gap-4">
@@ -17,7 +16,16 @@ export function ProductionMixChart() {
         <p className="text-sm text-muted">Bags produced by brand and size.</p>
       </div>
 
-      <ProductionMixTable mix={mix} totalBags={total} />
+      <PeriodFilter idPrefix="production-mix">
+        {(range) => {
+          const scoped = range
+            ? productionInDateRange(productionLog, range.from, range.to)
+            : productionLog;
+          const mix = productionMixByBrand(scoped);
+          const total = totalBagsProduced(scoped);
+          return <ProductionMixTable mix={mix} totalBags={total} />;
+        }}
+      </PeriodFilter>
     </ClayCard>
   );
 }

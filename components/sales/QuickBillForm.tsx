@@ -21,6 +21,7 @@ export function QuickBillForm() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [customerName, setCustomerName] = useState("");
   const [customerCnic, setCustomerCnic] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [amountPaid, setAmountPaid] = useState("0");
   const [saleDateTime, setSaleDateTime] = useState(nowDatetimeLocal);
   const [enteredBy, setEnteredBy] = useState("");
@@ -63,6 +64,7 @@ export function QuickBillForm() {
       status: paymentMode === "full" || left === 0 ? "paid" : "credit-pending",
       customerName: paymentMode === "credit" ? customerName : undefined,
       customerCnic: paymentMode === "credit" ? customerCnic || undefined : undefined,
+      customerPhone: paymentMode === "credit" ? customerPhone || undefined : undefined,
       amountPaid: paymentMode === "credit" ? paid : undefined,
       creditAmountLeft: paymentMode === "credit" ? left : undefined,
       createdAt: saleDateTime,
@@ -73,6 +75,7 @@ export function QuickBillForm() {
     setQuantity("1");
     setCustomerName("");
     setCustomerCnic("");
+    setCustomerPhone("");
     setAmountPaid("0");
     setSaleDateTime(nowDatetimeLocal());
     if (nameValue) setLastEnteredBy(nameValue);
@@ -159,6 +162,8 @@ export function QuickBillForm() {
           setCustomerName={setCustomerName}
           customerCnic={customerCnic}
           setCustomerCnic={setCustomerCnic}
+          customerPhone={customerPhone}
+          setCustomerPhone={setCustomerPhone}
           amountPaid={amountPaid}
           setAmountPaid={setAmountPaid}
         />

@@ -47,6 +47,7 @@ interface AppStoreValue {
   addTransaction: (tx: Omit<Transaction, "id" | "billNumber">) => Transaction;
   removeTransaction: (id: string) => void;
   restoreTransaction: (tx: Transaction) => void;
+  recordCreditPayment: (id: string, amountReceived: number) => void;
 
   costLedger: CostOverheadEntry[];
   setCostLedger: React.Dispatch<React.SetStateAction<CostOverheadEntry[]>>;
@@ -193,6 +194,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [setTransactions]
   );
 
+  const recordCreditPayment = useCallback(
+    (id: string, amountReceived: number) => {
+      setTransactions((prev) =>
+        prev.map((t) => {
+          if (t.id !== id) return t;
+          const newAmountPaid = (t.amountPaid ?? 0) + amountReceived;
+          const newCreditLeft = Math.max(t.subtotal - newAmountPaid, 0);
+          return {
+            ...t,
+            amountPaid: newAmountPaid,
+            creditAmountLeft: newCreditLeft,
+            status: newCreditLeft === 0 ? "paid" : "credit-pending",
+          };
+        })
+      );
+    },
+    [setTransactions]
+  );
+
   const addCostEntry = useCallback(
     (entry: Omit<CostOverheadEntry, "id">) => {
       setCostLedger((prev) => [{ ...entry, id: generateId() }, ...prev]);
@@ -281,6 +301,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addTransaction,
       removeTransaction,
       restoreTransaction,
+      recordCreditPayment,
       costLedger,
       setCostLedger,
       addCostEntry,
@@ -314,6 +335,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addTransaction,
       removeTransaction,
       restoreTransaction,
+      recordCreditPayment,
       costLedger,
       setCostLedger,
       addCostEntry,

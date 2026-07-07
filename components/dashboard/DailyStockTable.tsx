@@ -57,6 +57,9 @@ export function DailyStockTable() {
                 <th className="py-2 px-3 font-heading font-extrabold text-right">
                   Production Today
                 </th>
+                <th className="py-2 px-3 font-heading font-extrabold text-right">
+                  Atta Produced (kg)
+                </th>
                 <th className="py-2 px-3 font-heading font-extrabold text-right">Sales</th>
                 <th className="py-2 pl-3 font-heading font-extrabold text-right">
                   Closing Stock
@@ -74,6 +77,9 @@ export function DailyStockTable() {
                   </td>
                   <td className="py-2.5 px-3 text-right text-ink">
                     {row.productionTodayBags.toLocaleString()}
+                  </td>
+                  <td className="py-2.5 px-3 text-right text-muted">
+                    {(row.productionTodayBags * row.weightKg).toLocaleString()} kg
                   </td>
                   <td className="py-2.5 px-3 text-right text-ink">
                     {row.salesTodayBags.toLocaleString()}

@@ -7,15 +7,17 @@ import type { ProductionEntry, Transaction, WheatGrindingLog } from "@/lib/types
 
 export function ProducedTodayModal({
   entries,
+  title = "Bags Produced Today",
   onClose,
 }: {
   entries: ProductionEntry[];
+  title?: string;
   onClose: () => void;
 }) {
   const total = entries.reduce((s, e) => s + e.bags, 0);
 
   return (
-    <DetailModal title="Bags Produced Today" onClose={onClose}>
+    <DetailModal title={title} onClose={onClose}>
       <div className="clay-pressed rounded-[18px] p-4 w-fit">
         <span className="text-xs text-muted font-medium">Total Bags</span>
         <div className="font-heading font-black text-xl text-ink">{total.toLocaleString()}</div>
@@ -61,15 +63,17 @@ export function ProducedTodayModal({
 
 export function GrindedTodayModal({
   entries,
+  title = "Wheat Grinded Today",
   onClose,
 }: {
   entries: WheatGrindingLog[];
+  title?: string;
   onClose: () => void;
 }) {
   const total = entries.reduce((s, e) => s + e.wheatGrindedKg, 0);
 
   return (
-    <DetailModal title="Wheat Grinded Today" onClose={onClose}>
+    <DetailModal title={title} onClose={onClose}>
       <div className="clay-pressed rounded-[18px] p-4 w-fit">
         <span className="text-xs text-muted font-medium">Total Grinded</span>
         <div className="font-heading font-black text-xl text-sky">
@@ -118,18 +122,24 @@ export function GrindedTodayModal({
 export function StockRemainingModal({
   productionLog,
   transactions,
+  asOfDate,
+  subtitle = "Produced minus sold, per brand & size",
   onClose,
 }: {
   productionLog: ProductionEntry[];
   transactions: Transaction[];
+  asOfDate?: string;
+  subtitle?: string;
   onClose: () => void;
 }) {
-  const rows = stockByBrandSize(productionLog, transactions).filter((r) => r.stockBags > 0);
+  const rows = stockByBrandSize(productionLog, transactions, asOfDate).filter(
+    (r) => r.stockBags > 0
+  );
   const totalBags = rows.reduce((s, r) => s + r.stockBags, 0);
   const totalKg = rows.reduce((s, r) => s + r.stockKg, 0);
 
   return (
-    <DetailModal title="Stock Remaining" subtitle="Produced minus sold, per brand & size" onClose={onClose}>
+    <DetailModal title="Stock Remaining" subtitle={subtitle} onClose={onClose}>
       <div className="grid grid-cols-2 gap-3">
         <div className="clay-pressed rounded-[18px] p-4">
           <span className="text-xs text-muted font-medium">Total Bags</span>

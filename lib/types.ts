@@ -34,6 +34,7 @@ export interface Transaction {
   status: TransactionStatus;
   customerName?: string;
   customerCnic?: string;
+  customerPhone?: string; // for following up on partial/credit payments
   amountPaid?: number;
   creditAmountLeft?: number;
 }
