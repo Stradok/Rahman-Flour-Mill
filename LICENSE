@@ -1,0 +1,57 @@
+PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2024 Al Rehman Flour Mills
+
+All rights reserved.
+
+This software and associated documentation files (the "Software") are proprietary
+and confidential. Unauthorized copying of the Software, via any medium, is strictly
+prohibited.
+
+GRANT OF LICENSE
+
+You are granted a non-exclusive, non-transferable license to use this Software
+solely for the business operations of Al Rehman Flour Mills. This license is
+personal to you or your organization.
+
+RESTRICTIONS
+
+You may NOT:
+- Copy, modify, or translate the Software
+- Reverse engineer, decompile, or disassemble the Software
+- Rent, lease, lend, or loan the Software
+- Use the Software for any commercial purpose other than Al Rehman Flour Mills'
+  own business operations
+- Redistribute, sell, or sublicense the Software
+- Extract or remove any proprietary notices or labels from the Software
+
+DISCLAIMER OF WARRANTIES
+
+THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY.
+
+DATA ENCRYPTION & SECURITY
+
+This Software uses AES-256 encryption. The encryption passwords are your
+responsibility:
+- The database encryption password is irretrievable if lost
+- No "password recovery" mechanism exists by design
+- Written passwords should be stored in a secure location
+- Backups should be kept in a safe place
+
+TERMINATION
+
+This license is effective until terminated. Your rights under this license
+terminate automatically without notice if you fail to comply with any term(s)
+of this Agreement. Upon the effective date of termination, you will cease all
+use of the Software.
+
+GOVERNING LAW
+
+This license agreement is governed by the laws of Pakistan.
+
+For more information or to purchase additional licenses, contact:
+Al Rehman Flour Mills
+Email: support@example.com

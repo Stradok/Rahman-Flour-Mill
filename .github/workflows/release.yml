@@ -1,0 +1,48 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Setup Inno Setup
+        run: |
+          Invoke-WebRequest -Uri 'https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe' -OutFile 'installer.exe'
+          .\installer.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+
+      - name: Build Windows Installer
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" FlourMill.iss
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: Output/FlourMill-Setup-*.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const tag = context.ref.replace('refs/tags/', '');
+            console.log(`✅ Released version ${tag}`);
