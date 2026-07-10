@@ -1,0 +1,55 @@
+import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
+import { auth } from "@/auth";
+import { unlockWithStoredPassword, getDatabase } from "@/lib/db";
+import { deletionLogEntries } from "@/lib/schema";
+import { desc } from "drizzle-orm";
+
+export async function GET() {
+  try {
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    unlockWithStoredPassword();
+    const db = getDatabase();
+
+    const result = await db
+      .select()
+      .from(deletionLogEntries)
+      .orderBy(desc(deletionLogEntries.deletedAt));
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("GET /api/deletion-log error:", error);
+    return NextResponse.json({ error: "Failed to fetch deletion log" }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const body = await req.json();
+
+    unlockWithStoredPassword();
+    const db = getDatabase();
+
+    const entry = await db
+      .insert(deletionLogEntries)
+      .values({
+        id: randomUUID(),
+        deletedAt: new Date(body.deletedAt),
+        summary: body.summary,
+        deletedBy: body.deletedBy,
+        reason: body.reason,
+      })
+      .returning()
+      .then((res) => res[0]);
+
+    return NextResponse.json(entry, { status: 201 });
+  } catch (error) {
+    console.error("POST /api/deletion-log error:", error);
+    return NextResponse.json({ error: "Failed to create deletion log entry" }, { status: 500 });
+  }
+}

@@ -1,23 +1,36 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { ClayButton } from "@/components/clay/ClayButton";
 import { ClayInput } from "@/components/clay/ClayInput";
+import { DeleteConfirmModal } from "@/components/dashboard/DeleteConfirmModal";
+import { nowDatetimeLocal } from "@/lib/datetime";
 import type { Brand } from "@/lib/types";
 import { useAppStore } from "@/store/AppStore";
 import { PackagingSizeEditor } from "./PackagingSizeEditor";
 
 export function BrandRow({ brand }: { brand: Brand }) {
-  const { addPackagingSize, removeBrand } = useAppStore();
+  const { addPackagingSize, removeBrand, logProductChange } = useAppStore();
+  const { data: session } = useSession();
   const [weightKg, setWeightKg] = useState("");
   const [basePrice, setBasePrice] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const changedBy = session?.user?.name || session?.user?.email || "Unknown";
+  const canAddSize = !!weightKg && !!basePrice;
 
   const handleAddSize = () => {
-    if (!weightKg || !basePrice) return;
+    if (!canAddSize) return;
     addPackagingSize(brand.id, {
       label: `${weightKg}kg`,
       weightKg: Number(weightKg),
       basePrice: Number(basePrice),
+    });
+    logProductChange({
+      changedAt: nowDatetimeLocal(),
+      summary: `Added ${brand.name} · ${weightKg}kg (Rs ${Number(basePrice).toLocaleString()})`,
+      changedBy,
     });
     setWeightKg("");
     setBasePrice("");
@@ -27,14 +40,19 @@ export function BrandRow({ brand }: { brand: Brand }) {
     <div className="clay-card rounded-[28px] p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h3 className="font-heading font-extrabold text-lg text-ink">{brand.name}</h3>
-        <ClayButton type="button" variant="ghost" size="sm" onClick={() => removeBrand(brand.id)}>
+        <ClayButton
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setConfirmingDelete(true)}
+        >
           Delete brand
         </ClayButton>
       </div>
 
       <div className="flex flex-col gap-2">
         {brand.packagingSizes.map((size) => (
-          <PackagingSizeEditor key={size.id} brandId={brand.id} size={size} />
+          <PackagingSizeEditor key={size.id} brandId={brand.id} brandName={brand.name} size={size} />
         ))}
         {brand.packagingSizes.length === 0 && (
           <p className="text-sm text-muted">No packaging sizes yet.</p>
@@ -60,10 +78,33 @@ export function BrandRow({ brand }: { brand: Brand }) {
             onChange={(e) => setBasePrice(e.target.value)}
           />
         </div>
-        <ClayButton type="button" variant="secondary" size="sm" className="self-end" onClick={handleAddSize}>
+        <ClayButton
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="self-end"
+          disabled={!canAddSize}
+          onClick={handleAddSize}
+        >
           Add Size
         </ClayButton>
       </div>
+
+      {confirmingDelete && (
+        <DeleteConfirmModal
+          summary={`Brand "${brand.name}" and all ${brand.packagingSizes.length} of its packaging sizes`}
+          onCancel={() => setConfirmingDelete(false)}
+          onConfirm={(changedByName, reason) => {
+            removeBrand(brand.id);
+            logProductChange({
+              changedAt: nowDatetimeLocal(),
+              summary: `Deleted brand "${brand.name}" — ${reason}`,
+              changedBy: changedByName,
+            });
+            setConfirmingDelete(false);
+          }}
+        />
+      )}
     </div>
   );
 }

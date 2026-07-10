@@ -38,8 +38,8 @@ export function ProductionMixTable({ mix, totalBags }: ProductionMixTableProps) 
                 </th>
               ))}
               <th className="py-2 px-3 font-heading font-extrabold text-right">Total Bags</th>
-              <th className="py-2 px-3 font-heading font-extrabold text-right">%</th>
-              <th className="py-2 pl-3 font-heading font-extrabold text-right">Weight (kg)</th>
+              <th className="py-2 px-3 font-heading font-extrabold text-right">Weight (kg)</th>
+              <th className="py-2 pl-3 font-heading font-extrabold text-right">%</th>
             </tr>
           </thead>
           <tbody>
@@ -59,11 +59,11 @@ export function ProductionMixTable({ mix, totalBags }: ProductionMixTableProps) 
                 <td className="py-2.5 px-3 text-right font-heading font-extrabold text-ink">
                   {row.bags.toLocaleString()}
                 </td>
-                <td className="py-2.5 px-3 text-right text-muted">
-                  {row.percentage.toFixed(0)}%
-                </td>
-                <td className="py-2.5 pl-3 text-right text-ink">
+                <td className="py-2.5 px-3 text-right text-ink">
                   {row.totalWeightKg.toLocaleString()}
+                </td>
+                <td className="py-2.5 pl-3 text-right text-muted">
+                  {row.percentage.toFixed(0)}%
                 </td>
               </tr>
             ))}

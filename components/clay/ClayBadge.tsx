@@ -1,8 +1,9 @@
-type Variant = "paid" | "credit";
+type Variant = "paid" | "credit" | "returned";
 
 const VARIANT_CLASSES: Record<Variant, string> = {
   paid: "bg-emerald/15 text-emerald",
   credit: "bg-amber/15 text-amber",
+  returned: "bg-muted/15 text-muted",
 };
 
 export function ClayBadge({ variant, children }: { variant: Variant; children: React.ReactNode }) {

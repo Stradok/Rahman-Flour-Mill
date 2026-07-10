@@ -37,6 +37,10 @@ export interface Transaction {
   customerPhone?: string; // for following up on partial/credit payments
   amountPaid?: number;
   creditAmountLeft?: number;
+  returned?: boolean;
+  returnedAt?: string;
+  returnedBy?: string;
+  returnReason?: string;
 }
 
 export type OverheadCategory =
@@ -88,5 +92,20 @@ export interface DeletionLogEntry {
   deletedAt: string; // datetime-local, at the moment the deletion was confirmed
   summary: string; // what was deleted, e.g. "Electricity — Rs 5,000"
   deletedBy: string; // typed name, required as an accountability signature
+  reason: string; // typed reason, required
+}
+
+export interface ProductChangeLogEntry {
+  id: string;
+  changedAt: string; // datetime-local, at the moment the change was confirmed
+  summary: string; // what changed, e.g. "Added brand \"Chakki Atta\""
+  changedBy: string; // typed name — will become a Google account stamp once this is a cloud-based system
+}
+
+export interface ReturnLogEntry {
+  id: string;
+  returnedAt: string;
+  summary: string; // what was returned, e.g. "BILL-0004 — Premium Atta · 20kg x 2 — Rs 6,400"
+  returnedBy: string; // typed name, required as an accountability signature
   reason: string; // typed reason, required
 }

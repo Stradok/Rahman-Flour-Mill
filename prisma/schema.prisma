@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Auth.js uses JWT sessions (not database sessions) — the signed-in Google
+// account's name/email lives in an encrypted cookie, so no User/Account/
+// Session tables are needed here at all.
+
+// --- App data (Phase 1: Brands & Packaging Sizes only) ---
+
+model Brand {
+  id             String          @id @default(uuid())
+  name           String
+  createdAt      DateTime        @default(now())
+  packagingSizes PackagingSize[]
+}
+
+model PackagingSize {
+  id        String @id @default(uuid())
+  brandId   String
+  brand     Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  label     String
+  weightKg  Float
+  basePrice Float
+}
+
+// --- App data (Phase 2: Transactions) ---
+
+// brandId/packagingSizeId are NOT relations — brand/size details are snapshotted
+// at sale time (brandName, packagingLabel, weightKg, unitPrice) so historical
+// bills stay accurate even if the brand's price changes or the brand is deleted.
+model Transaction {
+  id                String    @id @default(uuid())
+  billNumber        String
+  createdAt         DateTime
+  enteredBy         String?
+  brandId           String
+  brandName         String
+  packagingSizeId   String
+  packagingLabel    String
+  weightKg          Float
+  unitPrice         Float
+  quantity          Int
+  subtotal          Float
+  paymentMode       String // "full" | "credit"
+  paymentMethod     String? // "cash" | "digital"
+  status            String // "paid" | "credit-pending"
+  customerName      String?
+  customerCnic      String?
+  customerPhone     String?
+  amountPaid        Float?
+  creditAmountLeft  Float?
+  returned          Boolean   @default(false)
+  returnedAt        DateTime?
+  returnedBy        String?
+  returnReason      String?
+
+  @@index([billNumber])
+}
+
+// --- App data (Phase 3: Cost Ledger, Production, Grinding, and audit logs) ---
+
+model CostOverheadEntry {
+  id                 String   @id @default(uuid())
+  createdAt          DateTime
+  enteredBy          String?
+  wheatVolumeKg      Float?
+  wheatRatePerKg     Float?
+  supplierName       String?
+  vehicleNumberPlate String?
+  category           String?
+  amount             Float
+  note               String?
+}
+
+model ProductionEntry {
+  id              String @id @default(uuid())
+  date            DateTime
+  enteredBy       String?
+  brandId         String
+  brandName       String
+  packagingSizeId String
+  packagingLabel  String
+  weightKg        Float
+  bags            Int
+}
+
+model WheatGrindingLog {
+  id             String   @id @default(uuid())
+  date           DateTime
+  enteredBy      String?
+  wheatGrindedKg Float
+  note           String?
+}
+
+// Append-only — no update/delete endpoints for any of these three logs.
+model DeletionLogEntry {
+  id        String   @id @default(uuid())
+  deletedAt DateTime
+  summary   String
+  deletedBy String
+  reason    String
+}
+
+model ProductChangeLogEntry {
+  id        String   @id @default(uuid())
+  changedAt DateTime
+  summary   String
+  changedBy String
+}
+
+model ReturnLogEntry {
+  id         String   @id @default(uuid())
+  returnedAt DateTime
+  summary    String
+  returnedBy String
+  reason     String
+}

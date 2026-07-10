@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { ClayCard } from "@/components/clay/ClayCard";
+import { ClayComboBox } from "@/components/clay/ClayComboBox";
 import { ClayInput } from "@/components/clay/ClayInput";
-import { ClaySelect } from "@/components/clay/ClaySelect";
 import { salesForBrandInRange } from "@/lib/calculations";
 import { todayDateOnly } from "@/lib/datetime";
 import { useAppStore } from "@/store/AppStore";
@@ -48,12 +48,12 @@ export function SalesSearch() {
         </p>
       </div>
 
-      <ClaySelect
+      <ClayComboBox
         id="sales-search-brand"
         label="Brand"
-        placeholder="Select brand"
+        placeholder="Type to search brands..."
         value={brandId}
-        onChange={(e) => setBrandId(e.target.value)}
+        onChange={setBrandId}
         options={brands.map((b) => ({ value: b.id, label: b.name }))}
       />
 

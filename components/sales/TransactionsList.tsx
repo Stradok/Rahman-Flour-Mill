@@ -7,11 +7,13 @@ import type { Transaction, TransactionStatus } from "@/lib/types";
 import { BillDetailModal } from "./BillDetailModal";
 import { LedgerRow } from "./LedgerRow";
 import { RecordPaymentModal } from "./RecordPaymentModal";
+import { ReturnConfirmModal } from "./ReturnConfirmModal";
 
 interface TransactionsListProps {
   transactions: Transaction[];
   onRemove?: (tx: Transaction) => void;
   onRecordPayment?: (tx: Transaction, amountReceived: number) => void;
+  onReturn?: (tx: Transaction, returnedBy: string, reason: string) => void;
   limit?: number; // cap rows shown when no search/filter is active
   maxHeightClassName?: string;
   emptyMessage?: string;
@@ -21,22 +23,28 @@ export function TransactionsList({
   transactions,
   onRemove,
   onRecordPayment,
+  onReturn,
   limit,
   maxHeightClassName = "max-h-[520px]",
   emptyMessage = "No sales recorded yet.",
 }: TransactionsListProps) {
   const [search, setSearch] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | TransactionStatus>("");
   const [payingTx, setPayingTx] = useState<Transaction | null>(null);
   const [viewingTx, setViewingTx] = useState<Transaction | null>(null);
+  const [returningTx, setReturningTx] = useState<Transaction | null>(null);
 
-  const hasActiveFilter = search.trim() !== "" || dateFilter !== "" || statusFilter !== "";
+  const hasActiveFilter =
+    search.trim() !== "" || dateFrom !== "" || dateTo !== "" || statusFilter !== "";
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return transactions.filter((t) => {
-      if (dateFilter && t.createdAt.slice(0, 10) !== dateFilter) return false;
+      const d = t.createdAt.slice(0, 10);
+      if (dateFrom && d < dateFrom) return false;
+      if (dateTo && d > dateTo) return false;
       if (statusFilter && t.status !== statusFilter) return false;
       if (q) {
         const haystack = [t.billNumber, t.customerName, t.customerCnic, t.customerPhone]
@@ -47,19 +55,20 @@ export function TransactionsList({
       }
       return true;
     });
-  }, [transactions, search, dateFilter, statusFilter]);
+  }, [transactions, search, dateFrom, dateTo, statusFilter]);
 
   const visible = hasActiveFilter || !limit ? filtered : filtered.slice(0, limit);
 
   const clearFilters = () => {
     setSearch("");
-    setDateFilter("");
+    setDateFrom("");
+    setDateTo("");
     setStatusFilter("");
   };
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <ClayInput
           id="transactions-search"
           label="Search"
@@ -68,11 +77,18 @@ export function TransactionsList({
           onChange={(e) => setSearch(e.target.value)}
         />
         <ClayInput
-          id="transactions-date-filter"
-          label="Date"
+          id="transactions-date-from"
+          label="From"
           type="date"
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+        />
+        <ClayInput
+          id="transactions-date-to"
+          label="Till"
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
         />
         <ClaySelect
           id="transactions-status-filter"
@@ -105,6 +121,7 @@ export function TransactionsList({
             tx={tx}
             onRemove={onRemove ? () => onRemove(tx) : undefined}
             onRecordPayment={onRecordPayment ? () => setPayingTx(tx) : undefined}
+            onReturn={onReturn ? () => setReturningTx(tx) : undefined}
             onView={() => setViewingTx(tx)}
           />
         ))}
@@ -127,6 +144,17 @@ export function TransactionsList({
       )}
 
       {viewingTx && <BillDetailModal tx={viewingTx} onClose={() => setViewingTx(null)} />}
+
+      {returningTx && onReturn && (
+        <ReturnConfirmModal
+          summary={`${returningTx.billNumber} · ${returningTx.brandName} · ${returningTx.packagingLabel} × ${returningTx.quantity} — Rs ${returningTx.subtotal.toLocaleString()}`}
+          onCancel={() => setReturningTx(null)}
+          onConfirm={(returnedBy, reason) => {
+            onReturn(returningTx, returnedBy, reason);
+            setReturningTx(null);
+          }}
+        />
+      )}
     </div>
   );
 }

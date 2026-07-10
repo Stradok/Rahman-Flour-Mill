@@ -24,7 +24,8 @@ export function EntryFilters<T>({
   children,
 }: EntryFiltersProps<T>) {
   const [search, setSearch] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [enteredByFilter, setEnteredByFilter] = useState("");
 
   const enteredByOptions = useMemo(() => {
@@ -42,28 +43,32 @@ export function EntryFilters<T>({
   }, [entries, getEnteredBy]);
 
   const showEnteredByFilter = enteredByOptions.length > 1;
-  const hasActiveFilter = search.trim() !== "" || dateFilter !== "" || enteredByFilter !== "";
+  const hasActiveFilter =
+    search.trim() !== "" || dateFrom !== "" || dateTo !== "" || enteredByFilter !== "";
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return entries.filter((e) => {
-      if (dateFilter && getDate(e).slice(0, 10) !== dateFilter) return false;
+      const d = getDate(e).slice(0, 10);
+      if (dateFrom && d < dateFrom) return false;
+      if (dateTo && d > dateTo) return false;
       if (enteredByFilter && getEnteredBy(e) !== enteredByFilter) return false;
       if (q && !getSearchText(e).toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [entries, search, dateFilter, enteredByFilter, getDate, getEnteredBy, getSearchText]);
+  }, [entries, search, dateFrom, dateTo, enteredByFilter, getDate, getEnteredBy, getSearchText]);
 
   const clearFilters = () => {
     setSearch("");
-    setDateFilter("");
+    setDateFrom("");
+    setDateTo("");
     setEnteredByFilter("");
   };
 
   return (
     <div className="flex flex-col gap-3">
       <div
-        className={`grid grid-cols-1 gap-3 ${showEnteredByFilter ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+        className={`grid grid-cols-1 gap-3 ${showEnteredByFilter ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}
       >
         <ClayInput
           id={`${idPrefix}-search`}
@@ -73,11 +78,18 @@ export function EntryFilters<T>({
           onChange={(e) => setSearch(e.target.value)}
         />
         <ClayInput
-          id={`${idPrefix}-date`}
-          label="Date"
+          id={`${idPrefix}-date-from`}
+          label="From"
           type="date"
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+        />
+        <ClayInput
+          id={`${idPrefix}-date-to`}
+          label="Till"
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
         />
         {showEnteredByFilter && (
           <ClaySelect

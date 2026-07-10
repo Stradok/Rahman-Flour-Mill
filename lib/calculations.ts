@@ -52,8 +52,11 @@ export function totalAttaProducedKg(entries: ProductionEntry[]): number {
   return entries.reduce((s, e) => s + e.bags * e.weightKg, 0);
 }
 
+// Returned transactions don't count as issued — the bags physically came back.
 export function totalAttaIssuedKg(transactions: Transaction[]): number {
-  return transactions.reduce((s, t) => s + t.quantity * t.weightKg, 0);
+  return transactions
+    .filter((t) => !t.returned)
+    .reduce((s, t) => s + t.quantity * t.weightKg, 0);
 }
 
 export function totalWheatGrindedKg(entries: WheatGrindingLog[]): number {
@@ -110,6 +113,34 @@ export function cumulativeMillStats(
   const attaProducedKg = totalAttaProducedKg(productionLog.filter((e) => upToDate(e.date)));
   const wheatGrindedKg = totalWheatGrindedKg(grindingLog.filter((e) => upToDate(e.date)));
   const attaIssuedKg = totalAttaIssuedKg(transactions.filter((t) => upToDate(t.createdAt)));
+  return {
+    wheatReceivedKg,
+    wheatGrindedKg,
+    wheatStockBalanceKg: Math.max(wheatReceivedKg - wheatGrindedKg, 0),
+    attaProducedKg,
+    attaIssuedKg,
+    attaStockBalanceKg: Math.max(attaProducedKg - attaIssuedKg, 0),
+  };
+}
+
+// fromDate/toDate ("YYYY-MM-DD", inclusive) scope every input to that window only —
+// use this for "how much happened between these two dates" instead of a running total.
+export function millStatsInDateRange(
+  costLedger: CostOverheadEntry[],
+  productionLog: ProductionEntry[],
+  transactions: Transaction[],
+  grindingLog: WheatGrindingLog[],
+  fromDate: string,
+  toDate: string
+): MillOperationsStatsSummary {
+  const inRange = (d: string) => {
+    const day = d.slice(0, 10);
+    return day >= fromDate && day <= toDate;
+  };
+  const wheatReceivedKg = totalWheatReceivedKg(costLedger.filter((e) => inRange(e.createdAt)));
+  const attaProducedKg = totalAttaProducedKg(productionLog.filter((e) => inRange(e.date)));
+  const wheatGrindedKg = totalWheatGrindedKg(grindingLog.filter((e) => inRange(e.date)));
+  const attaIssuedKg = totalAttaIssuedKg(transactions.filter((t) => inRange(t.createdAt)));
   return {
     wheatReceivedKg,
     wheatGrindedKg,
@@ -268,7 +299,7 @@ export function stockByBrandSize(
       .producedBags += entry.bags;
   }
   for (const t of transactions) {
-    if (!upToDate(t.createdAt)) continue;
+    if (!upToDate(t.createdAt) || t.returned) continue;
     ensure(t.brandId, t.brandName, t.packagingSizeId, t.packagingLabel, t.weightKg).soldBags +=
       t.quantity;
   }
@@ -399,7 +430,7 @@ export function salesForBrandInRange(
   toDate: string // "YYYY-MM-DD", inclusive
 ): SalesSearchResult {
   const matches = transactions.filter((t) => {
-    if (t.brandId !== brandId) return false;
+    if (t.brandId !== brandId || t.returned) return false;
     const d = t.createdAt.slice(0, 10);
     return d >= fromDate && d <= toDate;
   });
@@ -413,7 +444,7 @@ export function salesForBrandInRange(
 // --- Sales performance: Daily / Weekly / Monthly / Yearly rollups ---
 
 export function totalRevenue(transactions: Transaction[]): number {
-  return transactions.reduce((s, t) => s + t.subtotal, 0);
+  return transactions.filter((t) => !t.returned).reduce((s, t) => s + t.subtotal, 0);
 }
 
 export interface SalesRollup {
@@ -456,7 +487,9 @@ export function salesInDateRange(
   fromDate: string,
   toDate: string
 ): SalesRollup {
-  const matches = transactionsInDateRange(transactions, fromDate, toDate);
+  const matches = transactionsInDateRange(transactions, fromDate, toDate).filter(
+    (t) => !t.returned
+  );
   return {
     bags: matches.reduce((s, t) => s + t.quantity, 0),
     revenue: matches.reduce((s, t) => s + t.subtotal, 0),

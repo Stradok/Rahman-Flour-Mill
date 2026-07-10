@@ -74,8 +74,11 @@ export function EntriesManager() {
     removeTransaction,
     restoreTransaction,
     recordCreditPayment,
+    returnTransaction,
     deletionLog,
     logDeletion,
+    returnLog,
+    logReturn,
   } = useAppStore();
 
   const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null);
@@ -324,9 +327,47 @@ export function EntriesManager() {
         <TransactionsList
           transactions={transactions}
           onRemove={requestRemoveTransaction}
-          onRecordPayment={(tx, amount) => recordCreditPayment(tx.id, amount)}
+          onRecordPayment={(tx, amount) => recordCreditPayment(tx.billNumber, amount)}
+          onReturn={(tx, returnedBy, reason) => {
+            returnTransaction(tx.id, returnedBy, reason);
+            logReturn({
+              returnedAt: nowDatetimeLocal(),
+              summary: `${tx.billNumber} · ${tx.brandName} · ${tx.packagingLabel} × ${tx.quantity} — Rs ${tx.subtotal.toLocaleString()}`,
+              returnedBy,
+              reason,
+            });
+          }}
           maxHeightClassName="max-h-[320px]"
         />
+      </ClayCard>
+
+      <ClayCard accent="amber" className="flex flex-col gap-4">
+        <div>
+          <h2 className="font-heading font-black text-xl text-ink">Return Log</h2>
+          <p className="text-sm text-muted">
+            A permanent record of every sale that&apos;s been returned — what it was, who
+            processed the return, and why.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
+          {returnLog.map((entry) => (
+            <div key={entry.id} className="clay-card rounded-[16px] px-4 py-3 flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-heading font-extrabold text-ink truncate">
+                  {entry.summary}
+                </span>
+                <span className="text-xs text-muted shrink-0">
+                  {formatDateTime(entry.returnedAt)}
+                </span>
+              </div>
+              <span className="text-xs text-muted">Returned by {entry.returnedBy}</span>
+              <span className="text-xs text-muted italic">&ldquo;{entry.reason}&rdquo;</span>
+            </div>
+          ))}
+          {returnLog.length === 0 && (
+            <p className="text-sm text-muted text-center py-4">No sales have been returned yet.</p>
+          )}
+        </div>
       </ClayCard>
 
       <ClayCard className="flex flex-col gap-4">

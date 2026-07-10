@@ -1,22 +1,46 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { ClayButton } from "@/components/clay/ClayButton";
 import { ClayInput } from "@/components/clay/ClayInput";
+import { DeleteConfirmModal } from "@/components/dashboard/DeleteConfirmModal";
+import { nowDatetimeLocal } from "@/lib/datetime";
 import type { PackagingSize } from "@/lib/types";
 import { useAppStore } from "@/store/AppStore";
 
-export function PackagingSizeEditor({ brandId, size }: { brandId: string; size: PackagingSize }) {
-  const { updatePackagingSize, removePackagingSize } = useAppStore();
+export function PackagingSizeEditor({
+  brandId,
+  brandName,
+  size,
+}: {
+  brandId: string;
+  brandName: string;
+  size: PackagingSize;
+}) {
+  const { updatePackagingSize, removePackagingSize, logProductChange } = useAppStore();
+  const { data: session } = useSession();
   const [weightKg, setWeightKg] = useState(String(size.weightKg));
   const [basePrice, setBasePrice] = useState(String(size.basePrice));
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const commit = () => {
-    const weight = Number(weightKg) || 0;
+  const changedBy = session?.user?.name || session?.user?.email || "Unknown";
+  const isDirty = Number(weightKg) !== size.weightKg || Number(basePrice) !== size.basePrice;
+  const canSave = isDirty && weightKg !== "" && basePrice !== "";
+
+  const handleSave = () => {
+    if (!canSave) return;
+    const weight = Number(weightKg);
+    const price = Number(basePrice);
     updatePackagingSize(brandId, size.id, {
       label: `${weight}kg`,
       weightKg: weight,
-      basePrice: Number(basePrice) || 0,
+      basePrice: price,
+    });
+    logProductChange({
+      changedAt: nowDatetimeLocal(),
+      summary: `Updated ${brandName} · ${size.label} — ${size.weightKg}kg @ Rs ${size.basePrice.toLocaleString()} → ${weight}kg @ Rs ${price.toLocaleString()}`,
+      changedBy,
     });
   };
 
@@ -30,7 +54,6 @@ export function PackagingSizeEditor({ brandId, size }: { brandId: string; size: 
           suffix="kg"
           value={weightKg}
           onChange={(e) => setWeightKg(e.target.value)}
-          onBlur={commit}
         />
         <ClayInput
           id={`size-${size.id}-price`}
@@ -39,18 +62,43 @@ export function PackagingSizeEditor({ brandId, size }: { brandId: string; size: 
           suffix="Rs"
           value={basePrice}
           onChange={(e) => setBasePrice(e.target.value)}
-          onBlur={commit}
         />
       </div>
-      <ClayButton
-        type="button"
-        variant="danger"
-        size="sm"
-        className="self-end"
-        onClick={() => removePackagingSize(brandId, size.id)}
-      >
-        Remove
-      </ClayButton>
+      <div className="flex gap-2 self-end">
+        <ClayButton
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={!canSave}
+          onClick={handleSave}
+        >
+          Save Changes
+        </ClayButton>
+        <ClayButton
+          type="button"
+          variant="danger"
+          size="sm"
+          onClick={() => setConfirmingDelete(true)}
+        >
+          Remove
+        </ClayButton>
+      </div>
+
+      {confirmingDelete && (
+        <DeleteConfirmModal
+          summary={`${brandName} · ${size.label} — Rs ${size.basePrice.toLocaleString()}`}
+          onCancel={() => setConfirmingDelete(false)}
+          onConfirm={(changedByName, reason) => {
+            removePackagingSize(brandId, size.id);
+            logProductChange({
+              changedAt: nowDatetimeLocal(),
+              summary: `Removed ${brandName} · ${size.label} — ${reason}`,
+              changedBy: changedByName,
+            });
+            setConfirmingDelete(false);
+          }}
+        />
+      )}
     </div>
   );
 }

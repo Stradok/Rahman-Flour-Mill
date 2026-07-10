@@ -1,11 +1,8 @@
+// Only lastEnteredBy remains local — it's a per-device UI convenience (remembers
+// who's typing on this browser), not business data. Everything else now lives in
+// Postgres (see store/AppStore.tsx).
 export const STORAGE_KEYS = {
-  brands: "flourmill:v1:brands",
-  transactions: "flourmill:v1:transactions",
-  costLedger: "flourmill:v1:costLedger",
-  productionLog: "flourmill:v1:productionLog",
-  grindingLog: "flourmill:v1:grindingLog",
   lastEnteredBy: "flourmill:v1:lastEnteredBy",
-  deletionLog: "flourmill:v1:deletionLog",
 } as const;
 
 export const OVERHEAD_CATEGORY_LABELS: Record<string, string> = {

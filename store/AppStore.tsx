@@ -1,37 +1,42 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
+import useSWR from "swr";
 import { useLocalStorageState } from "@/lib/useLocalStorageState";
 import { STORAGE_KEYS } from "@/lib/constants";
-import { generateBillNumber, generateId } from "@/lib/id";
 import type {
   Brand,
   CostOverheadEntry,
   DeletionLogEntry,
   PackagingSize,
+  ProductChangeLogEntry,
   ProductionEntry,
+  ReturnLogEntry,
   Transaction,
   WheatGrindingLog,
 } from "@/lib/types";
 
-const DEFAULT_BRANDS: Brand[] = [
-  {
-    id: "brand-default-1",
-    name: "Premium Atta",
-    createdAt: new Date().toISOString(),
-    packagingSizes: [
-      { id: "size-default-1", label: "20kg", weightKg: 20, basePrice: 3200 },
-      { id: "size-default-2", label: "40kg", weightKg: 40, basePrice: 6300 },
-    ],
-  },
-];
+const jsonFetcher = (url: string) =>
+  fetch(url).then((res) => {
+    if (!res.ok) throw new Error(`Request to ${url} failed with ${res.status}`);
+    return res.json();
+  });
+
+const jsonRequest = (url: string, method: string, body?: unknown) =>
+  fetch(url, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  }).then((res) => {
+    if (!res.ok) throw new Error(`Request to ${url} failed with ${res.status}`);
+    return res.json();
+  });
 
 interface AppStoreValue {
   lastEnteredBy: string;
   setLastEnteredBy: React.Dispatch<React.SetStateAction<string>>;
 
   brands: Brand[];
-  setBrands: React.Dispatch<React.SetStateAction<Brand[]>>;
   addBrand: (name: string) => void;
   addPackagingSize: (brandId: string, size: Omit<PackagingSize, "id">) => void;
   updatePackagingSize: (
@@ -43,32 +48,35 @@ interface AppStoreValue {
   removePackagingSize: (brandId: string, sizeId: string) => void;
 
   transactions: Transaction[];
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-  addTransaction: (tx: Omit<Transaction, "id" | "billNumber">) => Transaction;
+  addTransactionBatch: (items: Omit<Transaction, "id" | "billNumber">[]) => Promise<Transaction[]>;
   removeTransaction: (id: string) => void;
   restoreTransaction: (tx: Transaction) => void;
-  recordCreditPayment: (id: string, amountReceived: number) => void;
+  recordCreditPayment: (billNumber: string, amountReceived: number) => void;
+  returnTransaction: (id: string, returnedBy: string, reason: string) => void;
 
   costLedger: CostOverheadEntry[];
-  setCostLedger: React.Dispatch<React.SetStateAction<CostOverheadEntry[]>>;
   addCostEntry: (entry: Omit<CostOverheadEntry, "id">) => void;
   removeCostEntry: (id: string) => void;
   restoreCostEntry: (entry: CostOverheadEntry) => void;
 
   productionLog: ProductionEntry[];
-  setProductionLog: React.Dispatch<React.SetStateAction<ProductionEntry[]>>;
   addProductionEntry: (entry: Omit<ProductionEntry, "id">) => void;
   removeProductionEntry: (id: string) => void;
   restoreProductionEntry: (entry: ProductionEntry) => void;
 
   grindingLog: WheatGrindingLog[];
-  setGrindingLog: React.Dispatch<React.SetStateAction<WheatGrindingLog[]>>;
   addGrindingEntry: (entry: Omit<WheatGrindingLog, "id">) => void;
   removeGrindingEntry: (id: string) => void;
   restoreGrindingEntry: (entry: WheatGrindingLog) => void;
 
   deletionLog: DeletionLogEntry[];
   logDeletion: (entry: Omit<DeletionLogEntry, "id">) => void;
+
+  productChangeLog: ProductChangeLogEntry[];
+  logProductChange: (entry: Omit<ProductChangeLogEntry, "id">) => void;
+
+  returnLog: ReturnLogEntry[];
+  logReturn: (entry: Omit<ReturnLogEntry, "id">) => void;
 }
 
 const AppStoreContext = createContext<AppStoreValue | null>(null);
@@ -78,211 +86,299 @@ export function AppProvider({ children }: { children: ReactNode }) {
     STORAGE_KEYS.lastEnteredBy,
     ""
   );
-  const [brands, setBrands] = useLocalStorageState<Brand[]>(
-    STORAGE_KEYS.brands,
-    DEFAULT_BRANDS
+  // Brands & Packaging Sizes are backed by Postgres (via /api/brands), not localStorage —
+  // the first data slice migrated off the browser as part of the backend rollout.
+  const { data: brands = [], mutate: mutateBrands } = useSWR<Brand[]>("/api/brands", jsonFetcher);
+
+  // Transactions are backed by Postgres too (via /api/transactions) — the second
+  // data slice migrated off the browser.
+  const { data: transactions = [], mutate: mutateTransactions } = useSWR<Transaction[]>(
+    "/api/transactions",
+    jsonFetcher
   );
-  const [transactions, setTransactions] = useLocalStorageState<Transaction[]>(
-    STORAGE_KEYS.transactions,
-    []
+
+  const { data: costLedger = [], mutate: mutateCostLedger } = useSWR<CostOverheadEntry[]>(
+    "/api/cost-ledger",
+    jsonFetcher
   );
-  const [costLedger, setCostLedger] = useLocalStorageState<CostOverheadEntry[]>(
-    STORAGE_KEYS.costLedger,
-    []
+  const { data: productionLog = [], mutate: mutateProductionLog } = useSWR<ProductionEntry[]>(
+    "/api/production",
+    jsonFetcher
   );
-  const [productionLog, setProductionLog] = useLocalStorageState<ProductionEntry[]>(
-    STORAGE_KEYS.productionLog,
-    []
+  const { data: grindingLog = [], mutate: mutateGrindingLog } = useSWR<WheatGrindingLog[]>(
+    "/api/grinding",
+    jsonFetcher
   );
-  const [grindingLog, setGrindingLog] = useLocalStorageState<WheatGrindingLog[]>(
-    STORAGE_KEYS.grindingLog,
-    []
+  const { data: deletionLog = [], mutate: mutateDeletionLog } = useSWR<DeletionLogEntry[]>(
+    "/api/deletion-log",
+    jsonFetcher
   );
-  const [deletionLog, setDeletionLog] = useLocalStorageState<DeletionLogEntry[]>(
-    STORAGE_KEYS.deletionLog,
-    []
+  const { data: productChangeLog = [], mutate: mutateProductChangeLog } = useSWR<
+    ProductChangeLogEntry[]
+  >("/api/product-change-log", jsonFetcher);
+  const { data: returnLog = [], mutate: mutateReturnLog } = useSWR<ReturnLogEntry[]>(
+    "/api/return-log",
+    jsonFetcher
   );
 
   const addBrand = useCallback(
-    (name: string) => {
-      setBrands((prev) => [
-        ...prev,
-        { id: generateId(), name, packagingSizes: [], createdAt: new Date().toISOString() },
-      ]);
+    async (name: string) => {
+      const created: Brand = await jsonRequest("/api/brands", "POST", { name });
+      mutateBrands((prev = []) => [...prev, created], { revalidate: false });
     },
-    [setBrands]
+    [mutateBrands]
   );
 
   const addPackagingSize = useCallback(
-    (brandId: string, size: Omit<PackagingSize, "id">) => {
-      setBrands((prev) =>
-        prev.map((b) =>
-          b.id === brandId
-            ? { ...b, packagingSizes: [...b.packagingSizes, { ...size, id: generateId() }] }
-            : b
-        )
+    async (brandId: string, size: Omit<PackagingSize, "id">) => {
+      const created: PackagingSize = await jsonRequest(
+        `/api/brands/${brandId}/sizes`,
+        "POST",
+        size
+      );
+      mutateBrands(
+        (prev = []) =>
+          prev.map((b) =>
+            b.id === brandId ? { ...b, packagingSizes: [...b.packagingSizes, created] } : b
+          ),
+        { revalidate: false }
       );
     },
-    [setBrands]
+    [mutateBrands]
   );
 
   const updatePackagingSize = useCallback(
-    (brandId: string, sizeId: string, updates: Partial<Omit<PackagingSize, "id">>) => {
-      setBrands((prev) =>
-        prev.map((b) =>
-          b.id === brandId
-            ? {
-                ...b,
-                packagingSizes: b.packagingSizes.map((s) =>
-                  s.id === sizeId ? { ...s, ...updates } : s
-                ),
-              }
-            : b
-        )
+    async (brandId: string, sizeId: string, updates: Partial<Omit<PackagingSize, "id">>) => {
+      await jsonRequest(`/api/brands/${brandId}/sizes/${sizeId}`, "PATCH", updates);
+      mutateBrands(
+        (prev = []) =>
+          prev.map((b) =>
+            b.id === brandId
+              ? {
+                  ...b,
+                  packagingSizes: b.packagingSizes.map((s) =>
+                    s.id === sizeId ? { ...s, ...updates } : s
+                  ),
+                }
+              : b
+          ),
+        { revalidate: false }
       );
     },
-    [setBrands]
+    [mutateBrands]
   );
 
   const removeBrand = useCallback(
-    (brandId: string) => {
-      setBrands((prev) => prev.filter((b) => b.id !== brandId));
+    async (brandId: string) => {
+      await jsonRequest(`/api/brands/${brandId}`, "DELETE");
+      mutateBrands((prev = []) => prev.filter((b) => b.id !== brandId), { revalidate: false });
     },
-    [setBrands]
+    [mutateBrands]
   );
 
   const removePackagingSize = useCallback(
-    (brandId: string, sizeId: string) => {
-      setBrands((prev) =>
-        prev.map((b) =>
-          b.id === brandId
-            ? { ...b, packagingSizes: b.packagingSizes.filter((s) => s.id !== sizeId) }
-            : b
-        )
+    async (brandId: string, sizeId: string) => {
+      await jsonRequest(`/api/brands/${brandId}/sizes/${sizeId}`, "DELETE");
+      mutateBrands(
+        (prev = []) =>
+          prev.map((b) =>
+            b.id === brandId
+              ? { ...b, packagingSizes: b.packagingSizes.filter((s) => s.id !== sizeId) }
+              : b
+          ),
+        { revalidate: false }
       );
     },
-    [setBrands]
+    [mutateBrands]
   );
 
-  const addTransaction = useCallback(
-    (tx: Omit<Transaction, "id" | "billNumber">) => {
-      let created: Transaction;
-      setTransactions((prev) => {
-        created = {
-          ...tx,
-          id: generateId(),
-          billNumber: generateBillNumber(prev),
-        };
-        return [created, ...prev];
+  // All items share ONE bill number — used for multi-brand carts, where the
+  // whole bill is one shared payment/credit balance rather than N separate ones.
+  // The bill number is generated server-side, so callers must await the result.
+  const addTransactionBatch = useCallback(
+    async (items: Omit<Transaction, "id" | "billNumber">[]) => {
+      const created: Transaction[] = await jsonRequest("/api/transactions/batch", "POST", {
+        items,
       });
-      return created!;
+      mutateTransactions((prev = []) => [...created, ...prev], { revalidate: false });
+      return created;
     },
-    [setTransactions]
+    [mutateTransactions]
   );
 
   const removeTransaction = useCallback(
-    (id: string) => {
-      setTransactions((prev) => prev.filter((t) => t.id !== id));
+    async (id: string) => {
+      await jsonRequest(`/api/transactions/${id}`, "DELETE");
+      mutateTransactions((prev = []) => prev.filter((t) => t.id !== id), { revalidate: false });
     },
-    [setTransactions]
+    [mutateTransactions]
   );
 
   const restoreTransaction = useCallback(
-    (tx: Transaction) => {
-      setTransactions((prev) => (prev.some((t) => t.id === tx.id) ? prev : [tx, ...prev]));
-    },
-    [setTransactions]
-  );
-
-  const recordCreditPayment = useCallback(
-    (id: string, amountReceived: number) => {
-      setTransactions((prev) =>
-        prev.map((t) => {
-          if (t.id !== id) return t;
-          const newAmountPaid = (t.amountPaid ?? 0) + amountReceived;
-          const newCreditLeft = Math.max(t.subtotal - newAmountPaid, 0);
-          return {
-            ...t,
-            amountPaid: newAmountPaid,
-            creditAmountLeft: newCreditLeft,
-            status: newCreditLeft === 0 ? "paid" : "credit-pending",
-          };
-        })
+    async (tx: Transaction) => {
+      const restored: Transaction = await jsonRequest("/api/transactions/restore", "POST", tx);
+      mutateTransactions(
+        (prev = []) => (prev.some((t) => t.id === restored.id) ? prev : [restored, ...prev]),
+        { revalidate: false }
       );
     },
-    [setTransactions]
+    [mutateTransactions]
+  );
+
+  // Applies to every line item sharing this bill number, since a multi-item bill
+  // has one shared balance rather than a separate one per brand/size.
+  const recordCreditPayment = useCallback(
+    async (billNumber: string, amountReceived: number) => {
+      const updated: Transaction[] = await jsonRequest(
+        `/api/transactions/by-bill/${billNumber}/payment`,
+        "POST",
+        { amountReceived }
+      );
+      mutateTransactions(
+        (prev = []) => {
+          const updatedIds = new Set(updated.map((t) => t.id));
+          return [...updated, ...prev.filter((t) => !updatedIds.has(t.id))];
+        },
+        { revalidate: false }
+      );
+    },
+    [mutateTransactions]
+  );
+
+  // Whole-line-item returns only. If the bill is still credit-pending, the
+  // returned line's value comes straight off what's still owed on the bill.
+  const returnTransaction = useCallback(
+    async (id: string, returnedBy: string, reason: string) => {
+      const updated: Transaction[] = await jsonRequest(`/api/transactions/${id}/return`, "POST", {
+        returnedBy,
+        reason,
+      });
+      mutateTransactions(
+        (prev = []) => {
+          const updatedIds = new Set(updated.map((t) => t.id));
+          return [...updated, ...prev.filter((t) => !updatedIds.has(t.id))];
+        },
+        { revalidate: false }
+      );
+    },
+    [mutateTransactions]
   );
 
   const addCostEntry = useCallback(
-    (entry: Omit<CostOverheadEntry, "id">) => {
-      setCostLedger((prev) => [{ ...entry, id: generateId() }, ...prev]);
+    async (entry: Omit<CostOverheadEntry, "id">) => {
+      const created: CostOverheadEntry = await jsonRequest("/api/cost-ledger", "POST", entry);
+      mutateCostLedger((prev = []) => [created, ...prev], { revalidate: false });
     },
-    [setCostLedger]
+    [mutateCostLedger]
   );
 
   const removeCostEntry = useCallback(
-    (id: string) => {
-      setCostLedger((prev) => prev.filter((e) => e.id !== id));
+    async (id: string) => {
+      await jsonRequest(`/api/cost-ledger/${id}`, "DELETE");
+      mutateCostLedger((prev = []) => prev.filter((e) => e.id !== id), { revalidate: false });
     },
-    [setCostLedger]
+    [mutateCostLedger]
   );
 
   const restoreCostEntry = useCallback(
-    (entry: CostOverheadEntry) => {
-      setCostLedger((prev) => (prev.some((e) => e.id === entry.id) ? prev : [entry, ...prev]));
+    async (entry: CostOverheadEntry) => {
+      const restored: CostOverheadEntry = await jsonRequest(
+        "/api/cost-ledger/restore",
+        "POST",
+        entry
+      );
+      mutateCostLedger(
+        (prev = []) => (prev.some((e) => e.id === restored.id) ? prev : [restored, ...prev]),
+        { revalidate: false }
+      );
     },
-    [setCostLedger]
+    [mutateCostLedger]
   );
 
   const addProductionEntry = useCallback(
-    (entry: Omit<ProductionEntry, "id">) => {
-      setProductionLog((prev) => [{ ...entry, id: generateId() }, ...prev]);
+    async (entry: Omit<ProductionEntry, "id">) => {
+      const created: ProductionEntry = await jsonRequest("/api/production", "POST", entry);
+      mutateProductionLog((prev = []) => [created, ...prev], { revalidate: false });
     },
-    [setProductionLog]
+    [mutateProductionLog]
   );
 
   const removeProductionEntry = useCallback(
-    (id: string) => {
-      setProductionLog((prev) => prev.filter((e) => e.id !== id));
+    async (id: string) => {
+      await jsonRequest(`/api/production/${id}`, "DELETE");
+      mutateProductionLog((prev = []) => prev.filter((e) => e.id !== id), { revalidate: false });
     },
-    [setProductionLog]
+    [mutateProductionLog]
   );
 
   const restoreProductionEntry = useCallback(
-    (entry: ProductionEntry) => {
-      setProductionLog((prev) =>
-        prev.some((e) => e.id === entry.id) ? prev : [entry, ...prev]
+    async (entry: ProductionEntry) => {
+      const restored: ProductionEntry = await jsonRequest(
+        "/api/production/restore",
+        "POST",
+        entry
+      );
+      mutateProductionLog(
+        (prev = []) => (prev.some((e) => e.id === restored.id) ? prev : [restored, ...prev]),
+        { revalidate: false }
       );
     },
-    [setProductionLog]
+    [mutateProductionLog]
   );
 
   const addGrindingEntry = useCallback(
-    (entry: Omit<WheatGrindingLog, "id">) => {
-      setGrindingLog((prev) => [{ ...entry, id: generateId() }, ...prev]);
+    async (entry: Omit<WheatGrindingLog, "id">) => {
+      const created: WheatGrindingLog = await jsonRequest("/api/grinding", "POST", entry);
+      mutateGrindingLog((prev = []) => [created, ...prev], { revalidate: false });
     },
-    [setGrindingLog]
+    [mutateGrindingLog]
   );
 
   const removeGrindingEntry = useCallback(
-    (id: string) => {
-      setGrindingLog((prev) => prev.filter((e) => e.id !== id));
+    async (id: string) => {
+      await jsonRequest(`/api/grinding/${id}`, "DELETE");
+      mutateGrindingLog((prev = []) => prev.filter((e) => e.id !== id), { revalidate: false });
     },
-    [setGrindingLog]
+    [mutateGrindingLog]
   );
 
   const restoreGrindingEntry = useCallback(
-    (entry: WheatGrindingLog) => {
-      setGrindingLog((prev) => (prev.some((e) => e.id === entry.id) ? prev : [entry, ...prev]));
+    async (entry: WheatGrindingLog) => {
+      const restored: WheatGrindingLog = await jsonRequest("/api/grinding/restore", "POST", entry);
+      mutateGrindingLog(
+        (prev = []) => (prev.some((e) => e.id === restored.id) ? prev : [restored, ...prev]),
+        { revalidate: false }
+      );
     },
-    [setGrindingLog]
+    [mutateGrindingLog]
   );
 
   const logDeletion = useCallback(
-    (entry: Omit<DeletionLogEntry, "id">) => {
-      setDeletionLog((prev) => [{ ...entry, id: generateId() }, ...prev]);
+    async (entry: Omit<DeletionLogEntry, "id">) => {
+      const created: DeletionLogEntry = await jsonRequest("/api/deletion-log", "POST", entry);
+      mutateDeletionLog((prev = []) => [created, ...prev], { revalidate: false });
     },
-    [setDeletionLog]
+    [mutateDeletionLog]
+  );
+
+  const logProductChange = useCallback(
+    async (entry: Omit<ProductChangeLogEntry, "id">) => {
+      const created: ProductChangeLogEntry = await jsonRequest(
+        "/api/product-change-log",
+        "POST",
+        entry
+      );
+      mutateProductChangeLog((prev = []) => [created, ...prev], { revalidate: false });
+    },
+    [mutateProductChangeLog]
+  );
+
+  const logReturn = useCallback(
+    async (entry: Omit<ReturnLogEntry, "id">) => {
+      const created: ReturnLogEntry = await jsonRequest("/api/return-log", "POST", entry);
+      mutateReturnLog((prev = []) => [created, ...prev], { revalidate: false });
+    },
+    [mutateReturnLog]
   );
 
   const value = useMemo<AppStoreValue>(
@@ -290,69 +386,69 @@ export function AppProvider({ children }: { children: ReactNode }) {
       lastEnteredBy,
       setLastEnteredBy,
       brands,
-      setBrands,
       addBrand,
       addPackagingSize,
       updatePackagingSize,
       removeBrand,
       removePackagingSize,
       transactions,
-      setTransactions,
-      addTransaction,
+      addTransactionBatch,
       removeTransaction,
       restoreTransaction,
       recordCreditPayment,
+      returnTransaction,
       costLedger,
-      setCostLedger,
       addCostEntry,
       removeCostEntry,
       restoreCostEntry,
       productionLog,
-      setProductionLog,
       addProductionEntry,
       removeProductionEntry,
       restoreProductionEntry,
       grindingLog,
-      setGrindingLog,
       addGrindingEntry,
       removeGrindingEntry,
       restoreGrindingEntry,
       deletionLog,
       logDeletion,
+      productChangeLog,
+      logProductChange,
+      returnLog,
+      logReturn,
     }),
     [
       lastEnteredBy,
       setLastEnteredBy,
       brands,
-      setBrands,
       addBrand,
       addPackagingSize,
       updatePackagingSize,
       removeBrand,
       removePackagingSize,
       transactions,
-      setTransactions,
-      addTransaction,
+      addTransactionBatch,
       removeTransaction,
       restoreTransaction,
       recordCreditPayment,
+      returnTransaction,
       costLedger,
-      setCostLedger,
       addCostEntry,
       removeCostEntry,
       restoreCostEntry,
       productionLog,
-      setProductionLog,
       addProductionEntry,
       removeProductionEntry,
       restoreProductionEntry,
       grindingLog,
-      setGrindingLog,
       addGrindingEntry,
       removeGrindingEntry,
       restoreGrindingEntry,
       deletionLog,
       logDeletion,
+      productChangeLog,
+      logProductChange,
+      returnLog,
+      logReturn,
     ]
   );
 

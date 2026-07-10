@@ -46,18 +46,28 @@ export default function HelpPage() {
         items={[
           {
             icon: "🧾",
-            title: "Quick Bill",
-            body: "Pick a Brand, then a Bag Size, then how many bags. The Subtotal updates automatically — no manual math needed.",
+            title: "Add one or more items",
+            body: "Type to search a Brand and Bag Size (no more scrolling through a long list), enter a quantity, and tap Add to Bill. Repeat for as many different brands and sizes as the customer is buying — they all end up on one bill, under one Bill Number.",
+          },
+          {
+            icon: "🚫",
+            title: "Can't oversell",
+            body: "Each item you add is checked against current stock (produced minus sold, minus anything already in this bill) — if a customer wants more bags of a brand/size than you actually have, adding it is blocked with a message telling you exactly how many are left.",
+          },
+          {
+            icon: "🗑️",
+            title: "Change your mind",
+            body: "Tap × next to any item in the bill to remove it before confirming — the Bill Subtotal updates instantly.",
           },
           {
             icon: "💳",
             title: "Full Payment vs Partial / Credit",
-            body: "Choose Full Payment if the customer pays everything now (cash or digital). Choose Partial / Credit if they're paying only part now — this reveals fields for their name, optional CNIC, and how much they're paying today. The remaining balance (\"Credit Amount Left\") is calculated for you.",
+            body: "This applies to the whole bill, not per item. Choose Full Payment if the customer pays everything now (cash or digital). Choose Partial / Credit if they're paying only part now — this reveals fields for their name, phone number, optional CNIC, and how much they're paying today. Add the phone number so you can follow up on what's still owed. The remaining balance (\"Credit Amount Left\") is calculated for you.",
           },
           {
             icon: "✅",
             title: "Confirm Sale",
-            body: "Tapping this creates a bill with a unique Bill Number (e.g. BILL-0001) and adds it to the Recent Transactions list below.",
+            body: "Tapping this creates one bill with a unique Bill Number (e.g. BILL-0001) covering every item you added, and adds it to the Recent Transactions list below. If it's a credit sale, all items on that bill share the same amount owed — recording a payment on any one of them settles the whole bill at once.",
           },
         ]}
       />
@@ -70,7 +80,12 @@ export default function HelpPage() {
           {
             icon: "🔎",
             title: "Search, Date, and Payment Status",
-            body: "Search matches bill number, customer name, or CNIC — handy for finding a specific credit sale without scrolling. Combine it with the Date and Payment Status filters (e.g. only Credit Pending sales on a given day) to narrow things down fast. Works the same way on the Entries page.",
+            body: "Search matches bill number, customer name, phone number, or CNIC — handy for finding a specific credit sale without scrolling. Combine it with the Date and Payment Status filters (e.g. only Credit Pending sales on a given day) to narrow things down fast. Works the same way on the Entries page.",
+          },
+          {
+            icon: "🧾",
+            title: "Tap a sale to see the full bill",
+            body: "Tap anywhere on a sale (not on Record Payment or the × button) to open its complete detail — brand, size, quantity, pricing, payment mode, customer name and phone, and how much is still owed.",
           },
           {
             icon: "🟢",
@@ -86,6 +101,11 @@ export default function HelpPage() {
             icon: "✅",
             title: "Record Payment",
             body: "Tap Record Payment on a credit sale to log money the customer brings in. It defaults to the full amount still owed — change it if they're only paying part of it. Paying in full flips the badge to \"Paid\"; a partial amount reduces what's owed and the sale stays \"Credit Pending\" so you can record the rest later. This button only shows up on sales that still have credit outstanding.",
+          },
+          {
+            icon: "↩️",
+            title: "Return",
+            body: "If a customer brings bags back, tap Return on that sale, type your name and the reason, and confirm. The bags go back into stock, the sale is marked \"Returned\" (shown with a strikethrough), and it's excluded from revenue and stock-sold figures. If the bill was still Credit Pending, the returned item's value comes straight off what's owed. Every return is kept in the Return Log on the Entries page.",
           },
           {
             icon: "👀",
@@ -146,12 +166,17 @@ export default function HelpPage() {
           {
             icon: "🔎",
             title: "Search each list",
-            body: "Every list has its own Search and Date filters — search matches whatever's relevant to that entry type (category, supplier name, vehicle number, brand, note, and more). Lists with more than one person logging entries also get an Entered By filter. Handy once you've got months or years of history and need to find one specific entry fast.",
+            body: "Every list has its own Search and From / Till date-range filters — search matches whatever's relevant to that entry type (category, supplier name, vehicle number, brand, note, and more). Lists with more than one person logging entries also get an Entered By filter. Handy once you've got months or years of history and need to find one specific entry fast.",
           },
           {
             icon: "✍️",
             title: "Deleting an entry takes a signature",
             body: "Tap × on any entry — including a sale — and you'll be asked to type your name and the reason before it's removed. This is the only place a sale can be deleted; Quick Bill & Ledger's Recent Transactions is view-only.",
+          },
+          {
+            icon: "↩️",
+            title: "Return Log",
+            body: "Every returned sale — what it was, who processed the return, and why — is kept in a permanent Return Log, separate from deletions since a return keeps the sale on record instead of erasing it.",
           },
           {
             icon: "📇",
@@ -261,12 +286,17 @@ export default function HelpPage() {
           {
             icon: "🥧",
             title: "One table, everything at a glance",
-            body: "Rows are your brands, columns are your bag sizes — each cell is how many bags of that brand/size were produced. Total Bags, %, and combined Weight (kg) for each brand are on the right.",
+            body: "Rows are your brands, columns are your bag sizes — each cell is how many bags of that brand/size were produced. Total Bags, combined Weight (kg), and % share of total production for each brand are on the right.",
           },
           {
             icon: "🔢",
             title: "Total Bags Produced",
             body: "One number below the table — the grand total across every brand. No per-column breakdown clutter, just the figure that matters.",
+          },
+          {
+            icon: "🗓️",
+            title: "All Time / Today / This Week / This Month / This Year / Custom",
+            body: "Pick a timeline to see the mix for just that period instead of all-time. This same filter also appears on the Production Mix shown inside the Cost & Overhead Ledger's Production section — the two are independent, so you can look at different periods in each place.",
           },
         ]}
       />
@@ -288,18 +318,23 @@ export default function HelpPage() {
           },
           {
             icon: "📅",
-            title: "Pick any date",
-            body: "The Date field at the top controls everything below: the two cumulative cards show totals up through that date, and the highlighted card shows what happened on that specific day. Defaults to today — pick an earlier date (e.g. 5 July) to see what things looked like then.",
+            title: "As of Date",
+            body: "The default mode. The Date field controls everything below: the two cumulative cards show totals up through that date, and the highlighted card shows what happened on that specific day. Defaults to today — pick an earlier date (e.g. 5 July) to see what things looked like then.",
+          },
+          {
+            icon: "🗓️",
+            title: "Date Range",
+            body: "Switch to this mode to see totals for just a stretch of time (From / Till) instead of a running cumulative total — handy for \"how much wheat did we receive and grind in June\" without it being buried in the all-time figure. \"Stock / Balance\" becomes \"Net Change\" in this mode, since it's the change over that period rather than a running balance.",
           },
           {
             icon: "⚙️",
             title: "Wheat Received → Grinded → Balance",
-            body: "Grinded is the real figure logged for the selected date (not an estimate). Balance is Received minus Grinded — what was left of the raw wheat stock as of that date.",
+            body: "Grinded is the real figure logged for the selected date or range (not an estimate). Balance/Net Change is Received minus Grinded.",
           },
           {
             icon: "🧈",
             title: "Atta Produced → Issued → Balance",
-            body: "Produced comes from what's logged in the ledger's Production section; Issued comes from bags sold in Quick Bill; Balance is the remaining stock — all cumulative up to the selected date.",
+            body: "Produced comes from what's logged in the ledger's Production section; Issued comes from bags sold in Quick Bill; Balance/Net Change is what's left over — scoped to whichever mode (As of Date or Date Range) you've picked.",
           },
         ]}
       />
@@ -330,7 +365,7 @@ export default function HelpPage() {
           {
             icon: "🔍",
             title: "How much did Brand A sell?",
-            body: "Pick a brand, then either a single date or a date range (From / Till), and tap Search. You'll see total bags sold, total revenue, and how many sales matched — useful for answering \"how much did we sell last week\" without scrolling through Recent Transactions.",
+            body: "Type to search for a brand (no scrolling a long list), then either a single date or a date range (From / Till), and tap Search. You'll see total bags sold, total revenue, and how many sales matched — useful for answering \"how much did we sell last week\" without scrolling through Recent Transactions.",
           },
         ]}
       />
@@ -366,12 +401,27 @@ export default function HelpPage() {
           {
             icon: "🏷️",
             title: "Add a Brand",
-            body: "Give your flour brand a name (e.g. \"Chakki Atta\"). It'll immediately appear as an option in Quick Bill and in the Production Entry section.",
+            body: "Type a brand name (e.g. \"Chakki Atta\") and your name in Entered By, then tap Add Brand. It immediately appears as an option in Quick Bill and in the Production Entry section.",
           },
           {
             icon: "⚖️",
             title: "Add Bag Sizes",
-            body: "For each brand, enter a weight (in kg) and the retail price — the size label (e.g. \"20kg\") is generated automatically from the weight. These are what show up in the Quick Bill page's Bag Size dropdown.",
+            body: "For each brand, enter a weight (in kg), the retail price, and your name, then tap Add Size — the size label (e.g. \"20kg\") is generated automatically from the weight.",
+          },
+          {
+            icon: "💾",
+            title: "Editing a price or weight needs Save Changes",
+            body: "Nothing here auto-saves as you type. Change a weight or price, type your name, and tap Save Changes — it stays disabled until something's actually different from what's saved and your name is filled in.",
+          },
+          {
+            icon: "✍️",
+            title: "Deleting a brand or size takes a signature",
+            body: "Tap Delete brand or Remove on a size and you'll be asked to type your name and the reason before it's removed — same accountability pattern as the Entries page.",
+          },
+          {
+            icon: "📇",
+            title: "Change Log",
+            body: "Every add, edit, and removal on this page — what changed, who did it, and when — is kept in a permanent Change Log at the bottom of the page. Once this becomes a cloud-based system, the typed name will be replaced by a Google account stamp.",
           },
         ]}
       />

@@ -23,9 +23,12 @@ export function BillDetailModal({ tx, onClose }: { tx: Transaction; onClose: () 
       maxWidthClassName="max-w-lg"
     >
       <div className="flex items-center justify-between">
-        <ClayBadge variant={tx.status === "paid" ? "paid" : "credit"}>
-          {tx.status === "paid" ? "Paid" : "Credit Pending"}
-        </ClayBadge>
+        <div className="flex items-center gap-1.5">
+          {tx.returned && <ClayBadge variant="returned">Returned</ClayBadge>}
+          <ClayBadge variant={tx.status === "paid" ? "paid" : "credit"}>
+            {tx.status === "paid" ? "Paid" : "Credit Pending"}
+          </ClayBadge>
+        </div>
         <span className="font-heading font-black text-2xl text-ink">
           Rs {tx.subtotal.toLocaleString()}
         </span>
@@ -73,6 +76,15 @@ export function BillDetailModal({ tx, onClose }: { tx: Transaction; onClose: () 
               Rs {(tx.creditAmountLeft ?? 0).toLocaleString()}
             </div>
           </div>
+        </div>
+      )}
+
+      {tx.returned && (
+        <div className="clay-pressed rounded-[18px] p-4 flex flex-col gap-1">
+          <span className="text-xs text-muted font-medium mb-1">Return Details</span>
+          <DetailRow label="Returned At" value={formatDateTime(tx.returnedAt ?? "")} />
+          <DetailRow label="Returned By" value={tx.returnedBy ?? "—"} />
+          {tx.returnReason && <DetailRow label="Reason" value={tx.returnReason} />}
         </div>
       )}
     </DetailModal>
