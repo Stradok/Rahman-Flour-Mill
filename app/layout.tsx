@@ -4,6 +4,7 @@ import { SessionProvider } from "next-auth/react";
 import "./globals.css";
 import { AppProvider } from "@/store/AppStore";
 import { Sidebar } from "@/components/nav/Sidebar";
+import SessionTimeoutWarning from "@/components/SessionTimeoutWarning";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -32,6 +33,7 @@ export default function RootLayout({
       <body className="min-h-full font-body bg-canvas text-ink antialiased">
         <SessionProvider>
           <AppProvider>
+            <SessionTimeoutWarning />
             <div className="flex min-h-screen lg:flex-row flex-col">
               <Sidebar />
               <main className="flex-1 min-w-0 px-4 py-6 sm:px-6 sm:py-10">
