@@ -1,4 +1,13 @@
-import { sqliteTable, text, real, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, real, integer, uniqueIndex, primaryKey } from "drizzle-orm/sqlite-core";
+
+export const settings = sqliteTable(
+  "settings",
+  {
+    key: text("key").notNull(),
+    value: text("value").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.key] })]
+);
 
 export const users = sqliteTable(
   "users",

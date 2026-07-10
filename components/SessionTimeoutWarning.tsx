@@ -8,8 +8,26 @@ export default function SessionTimeoutWarning() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [showWarning, setShowWarning] = useState(false);
 
-  const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
-  const WARNING_TIME = 5 * 60 * 1000; // Show warning at 5 minutes
+  // These will be fetched from settings API
+  const [sessionTimeout, setSessionTimeout] = useState(30 * 60 * 1000); // default 30 minutes
+  const [warningTime, setWarningTime] = useState(5 * 60 * 1000); // default 5 minutes
+
+  // Load settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        setSessionTimeout(data.sessionTimeoutMinutes * 60 * 1000);
+        setWarningTime(data.sessionWarningMinutes * 60 * 1000);
+      } catch (err) {
+        // Use defaults on error
+        console.error('Failed to load timeout settings:', err);
+      }
+    };
+
+    loadSettings();
+  }, []);
 
   useEffect(() => {
     if (!session) {
@@ -32,7 +50,7 @@ export default function SessionTimeoutWarning() {
         // Session will expire soon
         countdownId = setInterval(() => {
           const elapsed = Date.now() - lastActivityTime;
-          const remaining = SESSION_TIMEOUT - elapsed;
+          const remaining = sessionTimeout - elapsed;
           setTimeLeft(Math.max(0, remaining));
 
           if (remaining <= 0) {
@@ -42,7 +60,7 @@ export default function SessionTimeoutWarning() {
         }, 1000);
 
         setShowWarning(true);
-      }, SESSION_TIMEOUT - WARNING_TIME);
+      }, sessionTimeout - warningTime);
     };
 
     // Activity listeners
@@ -61,7 +79,7 @@ export default function SessionTimeoutWarning() {
       clearTimeout(timeoutId);
       clearInterval(countdownId);
     };
-  }, [session]);
+  }, [session, sessionTimeout, warningTime]);
 
   if (!session || !showWarning) {
     return null;

@@ -36,6 +36,11 @@ export async function POST(req: NextRequest) {
     sqliteDb.exec("CREATE TABLE IF NOT EXISTS _init (id INTEGER)");
 
     sqliteDb.exec(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -152,6 +157,19 @@ export async function POST(req: NextRequest) {
         `INSERT INTO users (id, name, username, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)`
       )
       .run(ownerId, ownerName, ownerUsername, passwordHash, "owner", now);
+
+    // Insert default settings
+    sqliteDb
+      .prepare(
+        `INSERT INTO settings (key, value) VALUES (?, ?)`
+      )
+      .run("session_timeout_minutes", "30");
+
+    sqliteDb
+      .prepare(
+        `INSERT INTO settings (key, value) VALUES (?, ?)`
+      )
+      .run("session_warning_minutes", "5");
 
     return NextResponse.json({ success: true });
   } catch (err) {
