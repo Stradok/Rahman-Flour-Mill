@@ -10,7 +10,6 @@
     "test:qa": "node qa/run-tests.mjs"
   },
   "dependencies": {
-    "better-sqlite3": "^9.2.2",
     "better-sqlite3-multiple-ciphers": "^12.11.1",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
@@ -22,6 +21,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",

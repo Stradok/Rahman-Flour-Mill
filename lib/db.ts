@@ -3,7 +3,7 @@ import * as schema from "./schema";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "fs";
 import { join } from "path";
 import { timingSafeEqual } from "crypto";
-import { BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
+import { BetterSQLite3Database, drizzle } from "./drizzle-sqlite-client";
 
 const DB_DIR = process.env.DB_PATH || join(process.cwd(), "data");
 const DB_FILE = join(DB_DIR, "flour-mill.db");
