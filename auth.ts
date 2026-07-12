@@ -42,7 +42,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
-          // Initialize database (skip encryption for now)
+          // Unlock database with stored password
+          unlockWithStoredPassword();
           const db = getDatabase();
           const result = db
             .select()
