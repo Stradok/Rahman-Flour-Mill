@@ -4,7 +4,7 @@
  * Generates realistic sample data for testing and presentation
  */
 
-import { getDatabase, initializeDatabase } from "@/lib/db";
+import { getSqlite } from "@/lib/db";
 import { randomUUID } from "crypto";
 
 interface DemoDataOptions {
@@ -64,7 +64,7 @@ function getRandomDate(daysAgo: number): number {
 export async function generateDemoData(options: DemoDataOptions = {}) {
   const days = options.days || 30;
   const targetSales = options.sales || 50;
-  const db = getDatabase();
+  const db = getSqlite();
 
   log(`Generating demo data for ${days} days...`, options);
 

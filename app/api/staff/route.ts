@@ -43,7 +43,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { name, username, tempPassword } = await req.json();
+    const body = await req.json();
+    const name = body.name as string;
+    const tempPassword = body.tempPassword as string;
+    // Lowercase to match the login lookup — otherwise "Noman" could never sign in as "noman"
+    const username = (body.username as string | undefined)?.trim().toLowerCase();
 
     // Validate input
     if (!name || !username || !tempPassword) {
@@ -93,7 +97,7 @@ export async function POST(req: Request) {
     await db.insert(users).values({
       id: staffId,
       name: name.trim(),
-      username: username.trim(),
+      username,
       passwordHash,
       role: "staff",
       createdAt: now,
@@ -103,7 +107,7 @@ export async function POST(req: Request) {
       {
         id: staffId,
         name: name.trim(),
-        username: username.trim(),
+        username,
         role: "staff",
         createdAt: now,
       },
