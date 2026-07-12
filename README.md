@@ -7,7 +7,32 @@ roles — running entirely on one Windows PC with an encrypted local database.
 No cloud, no subscription, no internet required for daily work.
 
 Built with Next.js 16, React 19, TypeScript, and SQLite (SQLite3MultipleCiphers,
-AES-encrypted at rest). Ships as a single Windows installer with Node.js bundled.
+AES-encrypted at rest). Installs on a Windows PC with one script (portable
+Node.js bundled automatically).
+
+---
+
+## Install on Windows (quick start)
+
+On the target PC, open **PowerShell** (no admin needed) and run:
+
+```powershell
+winget install --id Git.Git -e
+```
+
+Close and reopen PowerShell, then:
+
+```powershell
+git clone https://github.com/Stradok/Rahman-Flour-Mill.git "$env:LOCALAPPDATA\FlourMill\app"
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\FlourMill\app\windows\setup.ps1"
+```
+
+That's the whole installation. The script downloads portable Node.js, builds
+the app, creates **Flour Mill** shortcuts (Desktop + Start Menu) that open it
+in its own window, and an **Update Flour Mill** shortcut that pulls the
+latest version from GitHub and rebuilds. First run takes 5–10 minutes and
+ends at the Setup screen. Details, updating, uninstalling, and
+troubleshooting: [`docs/WINDOWS_SETUP.md`](docs/WINDOWS_SETUP.md).
 
 ---
 
@@ -79,8 +104,11 @@ qa/
   run-tests.mjs       44 automated end-to-end tests (npm run test:qa)
   *.md                manual test plan
 docs/
-  BUILD_WINDOWS_INSTALLER.md   how to produce the .exe
+  WINDOWS_SETUP.md             one-script install & update (recommended)
+  BUILD_WINDOWS_INSTALLER.md   alternative single-file .exe build
   Version_Controlling.md       release & update workflow
+windows/
+  setup.ps1           the one-script Windows installer/updater
 server.js             production server used by the installed app
 launcher.vbs          Windows launcher (silent server + Edge app mode)
 FlourMill.iss         Inno Setup installer definition
