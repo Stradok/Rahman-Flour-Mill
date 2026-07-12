@@ -27,8 +27,10 @@ export default function SettingsPage() {
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffUsername, setNewStaffUsername] = useState('');
   const [newStaffPassword, setNewStaffPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [resetStaffId, setResetStaffId] = useState<string | null>(null);
   const [resetPassword, setResetPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   // Permissions check
   if (session?.user && (session.user as any).role !== 'owner') {
@@ -417,13 +419,23 @@ export default function SettingsPage() {
                 onChange={(e) => setNewStaffUsername(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded"
               />
-              <input
-                type="password"
-                placeholder="Temporary Password"
-                value={newStaffPassword}
-                onChange={(e) => setNewStaffPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded"
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  placeholder="Temporary Password"
+                  value={newStaffPassword}
+                  onChange={(e) => setNewStaffPassword(e.target.value)}
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                  title={showNewPassword ? "Hide password" : "Show password"}
+                >
+                  {showNewPassword ? "👁️" : "👁️‍🗨️"}
+                </button>
+              </div>
 
               <ClayButton
                 onClick={handleAddStaff}
@@ -458,13 +470,23 @@ export default function SettingsPage() {
                     <div className="flex gap-2">
                       {resetStaffId === member.id ? (
                         <div className="flex gap-2 items-center">
-                          <input
-                            type="password"
-                            placeholder="New password"
-                            value={resetPassword}
-                            onChange={(e) => setResetPassword(e.target.value)}
-                            className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
+                          <div className="relative">
+                            <input
+                              type={showResetPassword ? "text" : "password"}
+                              placeholder="New password"
+                              value={resetPassword}
+                              onChange={(e) => setResetPassword(e.target.value)}
+                              className="px-2 py-1 pr-8 border border-gray-300 rounded text-sm"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowResetPassword(!showResetPassword)}
+                              className="absolute right-2 top-1 text-gray-500 hover:text-gray-700 text-xs"
+                              title={showResetPassword ? "Hide password" : "Show password"}
+                            >
+                              {showResetPassword ? "👁️" : "👁️‍🗨️"}
+                            </button>
+                          </div>
                           <button
                             onClick={() => handleResetPassword(member.id)}
                             disabled={loading}
