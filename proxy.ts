@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { dbExists } from "@/lib/db";
+import { isOwnerOnlyPage } from "@/lib/access";
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
-  const isLoginPage = req.nextUrl.pathname === "/login";
-  const isSetupPage = req.nextUrl.pathname === "/setup";
-  const isApiSetup = req.nextUrl.pathname === "/api/setup";
+  const role = (req.auth?.user as { role?: string } | undefined)?.role;
+  const pathname = req.nextUrl.pathname;
+  const isLoginPage = pathname === "/login";
+  const isSetupPage = pathname === "/setup";
+  const isRecoverPage = pathname === "/recover";
+  const isApiSetup = pathname === "/api/setup";
+  const isApiRecover = pathname.startsWith("/api/recover");
   const dbInitialized = dbExists();
 
-  if (!dbInitialized && !isSetupPage && !isApiSetup) {
+  if (!dbInitialized && !isSetupPage && !isApiSetup && !isRecoverPage && !isApiRecover) {
     return NextResponse.redirect(new URL("/setup", req.nextUrl));
   }
 
@@ -17,12 +22,25 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
 
-  if (!isLoggedIn && !isLoginPage && !isSetupPage && !isApiSetup && dbInitialized) {
+  if (
+    !isLoggedIn &&
+    !isLoginPage &&
+    !isSetupPage &&
+    !isRecoverPage &&
+    !isApiSetup &&
+    !isApiRecover &&
+    dbInitialized
+  ) {
     return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
 
   if (isLoggedIn && (isLoginPage || isSetupPage)) {
     return NextResponse.redirect(new URL("/", req.nextUrl));
+  }
+
+  // Staff must never reach financial pages — even by typing the URL.
+  if (isLoggedIn && role !== "owner" && isOwnerOnlyPage(pathname)) {
+    return NextResponse.redirect(new URL("/sales/quick-bill", req.nextUrl));
   }
 });
 

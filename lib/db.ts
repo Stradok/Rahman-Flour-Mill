@@ -166,6 +166,17 @@ export function verifyDatabasePassword(candidate: string): boolean {
   }
 }
 
+/**
+ * Re-encrypts the database under a new password and updates the key file.
+ * Requires the current stored key to be valid (the connection must open).
+ */
+export function rekeyDatabase(newPassword: string): void {
+  const db = openConnection();
+  db.pragma(`rekey='${escapeKey(newPassword)}'`);
+  assertReadable(db);
+  saveEncryptionPassword(newPassword);
+}
+
 export function closeDatabase(): void {
   if (state.sqlite) {
     try {

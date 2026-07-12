@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
+import { requireOwner } from "@/lib/authz";
 import { unlockWithStoredPassword, getDatabase } from "@/lib/db";
 import { returnLogEntries } from "@/lib/schema";
 import { desc } from "drizzle-orm";
 
 export async function GET() {
   try {
-    const session = await auth();
+    // Viewing the return audit log is owner-only; recording a return (POST
+    // below) stays open to staff since they process returns at the till.
+    const session = await requireOwner();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     unlockWithStoredPassword();

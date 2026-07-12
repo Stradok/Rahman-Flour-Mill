@@ -9,6 +9,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: string;
+  ownerOnly?: boolean;
 }
 
 interface NavGroup {
@@ -24,11 +25,11 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Dashboard",
     items: [
-      { href: "/dashboard/profit-projection", label: "Profit Projection", icon: "📊" },
+      { href: "/dashboard/profit-projection", label: "Profit Projection", icon: "📊", ownerOnly: true },
       { href: "/dashboard/mill-operations", label: "Mill Operations", icon: "🚚" },
       { href: "/dashboard/product-packaging", label: "Product & Packaging", icon: "🏷️" },
-      { href: "/dashboard/cost-ledger", label: "Cost & Overhead Ledger", icon: "📋" },
-      { href: "/dashboard/entries", label: "Entries", icon: "📜" },
+      { href: "/dashboard/cost-ledger", label: "Cost & Overhead Ledger", icon: "📋", ownerOnly: true },
+      { href: "/dashboard/entries", label: "Entries", icon: "📜", ownerOnly: true },
     ],
   },
 ];
@@ -52,10 +53,16 @@ function NavLink({ item, active, onClick }: { item: NavItem; active: boolean; on
 
 function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
   const { data: session } = useSession();
+  const isOwner = (session?.user as { role?: string } | undefined)?.role === "owner";
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/login" });
   };
+
+  const visibleGroups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => isOwner || !item.ownerOnly),
+  })).filter((group) => group.items.length > 0);
 
   return (
     <div className="flex flex-col gap-6 h-full">
@@ -64,7 +71,7 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
       </div>
 
       <nav className="flex flex-col gap-5 flex-1 overflow-y-auto">
-        {NAV_GROUPS.map((group) => (
+        {visibleGroups.map((group) => (
           <div key={group.title} className="flex flex-col gap-1.5">
             <p className="text-xs font-heading font-extrabold uppercase tracking-wide text-muted px-4">
               {group.title}

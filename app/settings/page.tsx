@@ -18,6 +18,36 @@ export default function SettingsPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmAction, setConfirmAction] = useState<null | 'logout' | 'reset'>(null);
 
+  // Credential rotation
+  const [curOwnerPw, setCurOwnerPw] = useState('');
+  const [newOwnerPw, setNewOwnerPw] = useState('');
+  const [curDbPw, setCurDbPw] = useState('');
+  const [newDbPw, setNewDbPw] = useState('');
+
+  const rotateCredential = async (payload: Record<string, string>, clear: () => void) => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await fetch('/api/owner/security', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(data.message);
+        clear();
+      } else {
+        setError(data.error || 'Update failed');
+      }
+    } catch {
+      setError('Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // General settings
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [sessionWarning, setSessionWarning] = useState(5);
@@ -376,6 +406,84 @@ export default function SettingsPage() {
             >
               Check for Updates
             </ClayButton>
+          </ClayCard>
+
+          <ClayCard accent="violet" className="p-6">
+            <h2 className="text-xl font-bold mb-4">Change Owner Password</h2>
+            <div className="space-y-3">
+              <input
+                type="password"
+                placeholder="Current password"
+                value={curOwnerPw}
+                onChange={(e) => setCurOwnerPw(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded"
+                autoComplete="current-password"
+              />
+              <input
+                type="password"
+                placeholder="New password (min 6 characters)"
+                value={newOwnerPw}
+                onChange={(e) => setNewOwnerPw(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded"
+                autoComplete="new-password"
+              />
+              <ClayButton
+                onClick={() =>
+                  rotateCredential(
+                    { action: 'owner-password', currentPassword: curOwnerPw, newPassword: newOwnerPw },
+                    () => {
+                      setCurOwnerPw('');
+                      setNewOwnerPw('');
+                    }
+                  )
+                }
+                disabled={loading || !curOwnerPw || !newOwnerPw}
+                className="w-full"
+              >
+                {loading ? 'Saving...' : 'Change Owner Password'}
+              </ClayButton>
+            </div>
+          </ClayCard>
+
+          <ClayCard accent="violet" className="p-6">
+            <h2 className="text-xl font-bold mb-4">Change Database Password</h2>
+            <p className="text-xs text-muted mb-3">
+              Re-encrypts the database file under a new password. After an emergency recovery,
+              change this immediately.
+            </p>
+            <div className="space-y-3">
+              <input
+                type="password"
+                placeholder="Current database password"
+                value={curDbPw}
+                onChange={(e) => setCurDbPw(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded"
+                autoComplete="off"
+              />
+              <input
+                type="password"
+                placeholder="New database password (min 8 characters)"
+                value={newDbPw}
+                onChange={(e) => setNewDbPw(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded"
+                autoComplete="off"
+              />
+              <ClayButton
+                onClick={() =>
+                  rotateCredential(
+                    { action: 'db-password', currentDbPassword: curDbPw, newDbPassword: newDbPw },
+                    () => {
+                      setCurDbPw('');
+                      setNewDbPw('');
+                    }
+                  )
+                }
+                disabled={loading || !curDbPw || !newDbPw}
+                className="w-full"
+              >
+                {loading ? 'Saving...' : 'Change Database Password'}
+              </ClayButton>
+            </div>
           </ClayCard>
 
           <ClayCard accent="pink" className="p-6">
