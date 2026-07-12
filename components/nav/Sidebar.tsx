@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { signOut, useSession } from "next-auth/react";
 
 interface NavItem {
   href: string;
@@ -33,6 +34,7 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 const HELP_ITEM: NavItem = { href: "/help", label: "Help", icon: "📖" };
+const SETTINGS_ITEM: NavItem = { href: "/settings", label: "Settings", icon: "⚙️" };
 
 function NavLink({ item, active, onClick }: { item: NavItem; active: boolean; onClick?: () => void }) {
   return (
@@ -49,6 +51,12 @@ function NavLink({ item, active, onClick }: { item: NavItem; active: boolean; on
 }
 
 function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const { data: session } = useSession();
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/login" });
+  };
+
   return (
     <div className="flex flex-col gap-6 h-full">
       <div className="font-heading font-black text-lg text-ink px-1">
@@ -73,8 +81,18 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
         ))}
       </nav>
 
-      <div className="pt-4 border-t border-muted/15">
+      <div className="pt-4 border-t border-muted/15 space-y-2">
         <NavLink item={HELP_ITEM} active={pathname?.startsWith(HELP_ITEM.href)} onClick={onNavigate} />
+        {session?.user && (session.user as any).role === "owner" && (
+          <NavLink item={SETTINGS_ITEM} active={pathname?.startsWith(SETTINGS_ITEM.href)} onClick={onNavigate} />
+        )}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-2.5 rounded-[16px] text-sm font-heading font-extrabold transition-all leading-tight w-full text-left text-muted hover:text-ink hover:-translate-y-0.5"
+        >
+          <span className="text-lg shrink-0">🚪</span>
+          <span>Logout</span>
+        </button>
       </div>
     </div>
   );

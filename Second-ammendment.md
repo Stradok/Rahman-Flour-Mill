@@ -372,3 +372,11 @@ Not in this pass
 data is unrecoverable by design — worth flagging to the client explicitly
 once built, since there's no cloud fallback to reset it).
 The limit succedded now continue
+
+
+===========================================
+add logout feature 
+add account manager for owner to setup accounts delete them etc etc 
+make sure that no one can delete the database without knowing the password 
+add a confirm button when setting up the database and the account settings
+add a query feature where they can mail me (only owner can) about any verision issue and add the mechanism like I can update there version by pushing the project to like github or anything like cloud based. I can review them as I only have claude on my machine even If it is a laptop how will I get the problem solved on there pc using this  

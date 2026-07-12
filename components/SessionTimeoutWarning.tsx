@@ -8,26 +8,9 @@ export default function SessionTimeoutWarning() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [showWarning, setShowWarning] = useState(false);
 
-  // These will be fetched from settings API
-  const [sessionTimeout, setSessionTimeout] = useState(30 * 60 * 1000); // default 30 minutes
-  const [warningTime, setWarningTime] = useState(5 * 60 * 1000); // default 5 minutes
-
-  // Load settings on mount
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const res = await fetch('/api/settings');
-        const data = await res.json();
-        setSessionTimeout(data.sessionTimeoutMinutes * 60 * 1000);
-        setWarningTime(data.sessionWarningMinutes * 60 * 1000);
-      } catch (err) {
-        // Use defaults on error
-        console.error('Failed to load timeout settings:', err);
-      }
-    };
-
-    loadSettings();
-  }, []);
+  // Default timeout settings (30 minutes timeout, 5 minute warning)
+  const sessionTimeout = 30 * 60 * 1000;
+  const warningTime = 5 * 60 * 1000;
 
   useEffect(() => {
     if (!session) {

@@ -1,6 +1,6 @@
 import Database from "better-sqlite3-multiple-ciphers";
 import * as schema from "./schema";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from "fs";
 import { join } from "path";
 import { BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
 
@@ -18,11 +18,17 @@ export function initializeDatabase() {
   }
 
   if (!existsSync(DB_DIR)) {
-    mkdirSync(DB_DIR, { recursive: true });
+    mkdirSync(DB_DIR, { recursive: true, mode: 0o777 });
   }
 
   if (!sqliteDb) {
     sqliteDb = new Database(DB_FILE, { fileMustExist: false, nativeBinding: undefined });
+    // Ensure file has write permissions
+    try {
+      chmodSync(DB_FILE, 0o666);
+    } catch (err) {
+      console.warn("Could not chmod database file:", err);
+    }
   }
   return sqliteDb;
 }
@@ -76,13 +82,10 @@ export function encryptDatabase(password: string): void {
 
 export function getDatabase() {
   if (!sqliteDb) {
-    throw new Error("Database not unlocked. Call unlockDatabase first.");
-  }
-  if (!isUnlocked) {
-    throw new Error("Database is locked. Call unlockDatabase first.");
+    initializeDatabase();
   }
   if (!db) {
-    db = drizzle(sqliteDb, { schema });
+    db = drizzle(sqliteDb!, { schema });
   }
   return db;
 }

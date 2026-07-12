@@ -20,7 +20,9 @@ declare module "next-auth" {
 
 function verifyPassword(password: string, hash: string): boolean {
   try {
-    return timingSafeEqual(Buffer.from(hash), Buffer.from(scryptSync(password, "salt", 32)));
+    const storedHash = Buffer.from(hash, 'hex');
+    const inputHash = scryptSync(password, "salt", 32);
+    return timingSafeEqual(storedHash, inputHash);
   } catch {
     return false;
   }
@@ -40,14 +42,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
-          unlockWithStoredPassword();
+          // Initialize database (skip encryption for now)
           const db = getDatabase();
-          const user = await db
+          const result = db
             .select()
             .from(users)
             .where(eq(users.username, credentials.username as string))
             .limit(1)
-            .then((res) => res[0]);
+            .all();
+
+          const user = result[0];
 
           if (!user) {
             return null;

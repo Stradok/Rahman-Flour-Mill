@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getDatabase, unlockWithStoredPassword } from "@/lib/db";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
+import { settings } from "@/lib/schema";
 
 // GET: Get current settings (owner only)
 export async function GET() {
@@ -14,21 +15,16 @@ export async function GET() {
     unlockWithStoredPassword();
     const db = getDatabase();
 
-    // Get settings from a simple key-value table or use defaults
-    const result = await db.execute(
-      sql`SELECT key, value FROM settings WHERE key IN ('session_timeout_minutes', 'session_warning_minutes')`
-    );
+    // Get settings from database
+    const timeoutSetting = db.select().from(settings).where(eq(settings.key, 'session_timeout_minutes')).all()[0];
+    const warningSetting = db.select().from(settings).where(eq(settings.key, 'session_warning_minutes')).all()[0];
 
-    // Parse results (Drizzle returns raw SQL results differently)
-    const settings = {
-      sessionTimeoutMinutes: 30,  // default
-      sessionWarningMinutes: 5,   // default
+    const result = {
+      sessionTimeoutMinutes: timeoutSetting ? parseInt(timeoutSetting.value) : 30,
+      sessionWarningMinutes: warningSetting ? parseInt(warningSetting.value) : 5,
     };
 
-    // If settings exist in DB, override defaults
-    // (This depends on if we have a settings table - we might need to add it)
-
-    return NextResponse.json(settings);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("GET /api/settings error:", error);
     // Return defaults on error
@@ -75,17 +71,18 @@ export async function PATCH(req: Request) {
     const db = getDatabase();
 
     // Update settings in database
-    // This assumes we create a settings table, or we can store in a JSON field
     if (sessionTimeoutMinutes) {
-      await db.execute(
-        sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('session_timeout_minutes', ${sessionTimeoutMinutes})`
-      );
+      db.insert(settings)
+        .values({ key: 'session_timeout_minutes', value: sessionTimeoutMinutes.toString() })
+        .onConflictDoUpdate({ target: settings.key, set: { value: sessionTimeoutMinutes.toString() } })
+        .run();
     }
 
     if (sessionWarningMinutes) {
-      await db.execute(
-        sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('session_warning_minutes', ${sessionWarningMinutes})`
-      );
+      db.insert(settings)
+        .values({ key: 'session_warning_minutes', value: sessionWarningMinutes.toString() })
+        .onConflictDoUpdate({ target: settings.key, set: { value: sessionWarningMinutes.toString() } })
+        .run();
     }
 
     return NextResponse.json({

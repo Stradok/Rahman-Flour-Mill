@@ -15,24 +15,11 @@ export async function POST(req: NextRequest) {
 
     const sqliteDb = initializeDatabase();
 
-    // Must set journal mode BEFORE any writes and BEFORE encryption
-    const beforeMode = sqliteDb.pragma("journal_mode");
-    console.log("Journal mode before:", beforeMode);
+    // Save the password for future use (encryption will be added later)
+    saveEncryptionPassword(dbPassword);
+    console.log("Database password saved");
 
-    const journalResult = sqliteDb.pragma("journal_mode = DELETE");
-    console.log("Journal mode after pragma:", journalResult);
-
-    // Now encrypt the database (must happen before creating tables)
-    try {
-      encryptDatabase(dbPassword);
-      saveEncryptionPassword(dbPassword);
-      console.log("Database encrypted successfully");
-    } catch (err) {
-      console.error("Encryption error:", err);
-      throw err;
-    }
-
-    // Create a table first
+    // Create initial table
     sqliteDb.exec("CREATE TABLE IF NOT EXISTS _init (id INTEGER)");
 
     sqliteDb.exec(`

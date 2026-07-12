@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ClayButton } from '@/components/clay/ClayButton';
 import { ClayCard } from '@/components/clay/ClayCard';
+import { FeedbackModal } from '@/components/FeedbackModal';
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -13,6 +14,9 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<null | 'logout' | 'reset'>(null);
 
   // General settings
   const [sessionTimeout, setSessionTimeout] = useState(30);
@@ -186,9 +190,78 @@ export default function SettingsPage() {
     }
   };
 
+  const handleLogout = async () => {
+    setConfirmAction(null);
+    setShowConfirmDialog(false);
+    await signOut({ callbackUrl: "/login" });
+  };
+
+  const handleResetDatabase = () => {
+    setConfirmAction(null);
+    setShowConfirmDialog(false);
+    router.push("/recover");
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Settings</h1>
+      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+
+      {showConfirmDialog && confirmAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+          <div className="bg-canvas rounded-2xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold mb-4">
+              {confirmAction === "logout" ? "Confirm Logout" : "Confirm Database Reset"}
+            </h3>
+            <p className="text-sm text-muted mb-6">
+              {confirmAction === "logout"
+                ? "Are you sure you want to logout?"
+                : "This will take you to the database recovery page. You'll need the database password to reset it."}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowConfirmDialog(false);
+                  setConfirmAction(null);
+                }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-ink border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAction === "logout" ? handleLogout : handleResetDatabase}
+                className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded ${
+                  confirmAction === "logout"
+                    ? "bg-violet hover:bg-violet/90"
+                    : "bg-red-600 hover:bg-red-700"
+                }`}
+              >
+                {confirmAction === "logout" ? "Yes, Logout" : "Go to Recovery"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFeedbackOpen(true)}
+            className="px-4 py-2 text-sm font-medium bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+          >
+            📧 Send Feedback
+          </button>
+          <button
+            onClick={() => {
+              setConfirmAction("logout");
+              setShowConfirmDialog(true);
+            }}
+            className="px-4 py-2 text-sm font-medium bg-red-50 text-red-700 rounded hover:bg-red-100"
+          >
+            🚪 Logout
+          </button>
+        </div>
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-4 mb-6 border-b">
@@ -300,6 +373,23 @@ export default function SettingsPage() {
               className="w-full"
             >
               Check for Updates
+            </ClayButton>
+          </ClayCard>
+
+          <ClayCard accent="pink" className="p-6">
+            <h2 className="text-xl font-bold mb-4">Danger Zone</h2>
+            <div className="bg-red-50 border border-red-200 rounded p-3 mb-4 text-sm text-red-800">
+              <p className="font-medium mb-1">⚠️ Reset Database</p>
+              <p className="text-xs">This will delete all your data and require setup from scratch. Use only if you've lost the database password or want to completely reset.</p>
+            </div>
+            <ClayButton
+              onClick={() => {
+                setConfirmAction("reset");
+                setShowConfirmDialog(true);
+              }}
+              className="w-full bg-red-600 hover:bg-red-700"
+            >
+              Reset Database
             </ClayButton>
           </ClayCard>
         </div>

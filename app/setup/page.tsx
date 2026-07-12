@@ -5,13 +5,17 @@ import { ClayButton } from "@/components/clay/ClayButton";
 import { ClayCard } from "@/components/clay/ClayCard";
 
 export default function SetupPage() {
-  const [step, setStep] = useState<"password" | "owner">("password");
+  const [step, setStep] = useState<"password" | "owner" | "review">("password");
   const [dbPassword, setDbPassword] = useState("");
   const [dbPasswordConfirm, setDbPasswordConfirm] = useState("");
+  const [showDbPassword, setShowDbPassword] = useState(false);
+  const [showDbPasswordConfirm, setShowDbPasswordConfirm] = useState(false);
   const [ownerName, setOwnerName] = useState("");
   const [ownerUsername, setOwnerUsername] = useState("");
   const [ownerPassword, setOwnerPassword] = useState("");
   const [ownerPasswordConfirm, setOwnerPasswordConfirm] = useState("");
+  const [showOwnerPassword, setShowOwnerPassword] = useState(false);
+  const [showOwnerPasswordConfirm, setShowOwnerPasswordConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -37,28 +41,32 @@ export default function SetupPage() {
     setStep("owner");
   };
 
-  const handleOwnerStep = async (e: React.FormEvent) => {
+  const handleOwnerStep = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     if (!ownerName || !ownerUsername || !ownerPassword) {
       setError("All fields are required");
-      setLoading(false);
       return;
     }
 
     if (ownerPassword !== ownerPasswordConfirm) {
       setError("Passwords do not match");
-      setLoading(false);
       return;
     }
 
     if (ownerPassword.length < 6) {
       setError("Password must be at least 6 characters");
-      setLoading(false);
       return;
     }
+
+    setStep("review");
+  };
+
+  const handleConfirmSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
       const res = await fetch("/api/setup", {
@@ -96,13 +104,23 @@ export default function SetupPage() {
           <form onSubmit={handlePasswordStep} className="w-full flex flex-col gap-4">
             <div>
               <label className="text-sm font-medium text-ink">Database Password</label>
-              <input
-                type="password"
-                value={dbPassword}
-                onChange={(e) => setDbPassword(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm"
-                placeholder="Enter encryption password"
-              />
+              <div className="relative">
+                <input
+                  type={showDbPassword ? "text" : "password"}
+                  value={dbPassword}
+                  onChange={(e) => setDbPassword(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 pr-10 border border-gray-300 rounded text-sm"
+                  placeholder="Enter encryption password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowDbPassword(!showDbPassword)}
+                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                  title={showDbPassword ? "Hide password" : "Show password"}
+                >
+                  {showDbPassword ? "👁️" : "👁️‍🗨️"}
+                </button>
+              </div>
               <p className="text-xs text-muted mt-1">
                 This password encrypts your database file. Keep it safe — if lost, data cannot be recovered.
               </p>
@@ -110,13 +128,23 @@ export default function SetupPage() {
 
             <div>
               <label className="text-sm font-medium text-ink">Confirm Password</label>
-              <input
-                type="password"
-                value={dbPasswordConfirm}
-                onChange={(e) => setDbPasswordConfirm(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm"
-                placeholder="Confirm encryption password"
-              />
+              <div className="relative">
+                <input
+                  type={showDbPasswordConfirm ? "text" : "password"}
+                  value={dbPasswordConfirm}
+                  onChange={(e) => setDbPasswordConfirm(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 pr-10 border border-gray-300 rounded text-sm"
+                  placeholder="Confirm encryption password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowDbPasswordConfirm(!showDbPasswordConfirm)}
+                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                  title={showDbPasswordConfirm ? "Hide password" : "Show password"}
+                >
+                  {showDbPasswordConfirm ? "👁️" : "👁️‍🗨️"}
+                </button>
+              </div>
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
@@ -124,6 +152,38 @@ export default function SetupPage() {
             <ClayButton type="submit" className="w-full">
               Next
             </ClayButton>
+          </form>
+        ) : step === "review" ? (
+          <form onSubmit={handleConfirmSetup} className="w-full flex flex-col gap-4">
+            <div className="bg-blue-50 border border-blue-200 rounded p-4">
+              <h2 className="font-bold text-blue-900 mb-3">Review Setup Details</h2>
+              <div className="space-y-2 text-sm text-blue-800">
+                <p><span className="font-medium">Owner Name:</span> {ownerName}</p>
+                <p><span className="font-medium">Username:</span> {ownerUsername}</p>
+                <p className="text-xs text-blue-700 mt-3 border-t border-blue-200 pt-2">
+                  ⚠️ Make sure you remember your passwords. They cannot be recovered if lost.
+                </p>
+              </div>
+            </div>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <div className="flex gap-2">
+              <ClayButton
+                type="button"
+                onClick={() => {
+                  setStep("owner");
+                  setError("");
+                }}
+                className="flex-1"
+                variant="secondary"
+              >
+                Back
+              </ClayButton>
+              <ClayButton type="submit" className="flex-1" disabled={loading}>
+                {loading ? "Creating..." : "Confirm & Create"}
+              </ClayButton>
+            </div>
           </form>
         ) : (
           <form onSubmit={handleOwnerStep} className="w-full flex flex-col gap-4">
@@ -151,24 +211,44 @@ export default function SetupPage() {
 
             <div>
               <label className="text-sm font-medium text-ink">Password</label>
-              <input
-                type="password"
-                value={ownerPassword}
-                onChange={(e) => setOwnerPassword(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm"
-                placeholder="Login password"
-              />
+              <div className="relative">
+                <input
+                  type={showOwnerPassword ? "text" : "password"}
+                  value={ownerPassword}
+                  onChange={(e) => setOwnerPassword(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 pr-10 border border-gray-300 rounded text-sm"
+                  placeholder="Login password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowOwnerPassword(!showOwnerPassword)}
+                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                  title={showOwnerPassword ? "Hide password" : "Show password"}
+                >
+                  {showOwnerPassword ? "👁️" : "👁️‍🗨️"}
+                </button>
+              </div>
             </div>
 
             <div>
               <label className="text-sm font-medium text-ink">Confirm Password</label>
-              <input
-                type="password"
-                value={ownerPasswordConfirm}
-                onChange={(e) => setOwnerPasswordConfirm(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm"
-                placeholder="Confirm login password"
-              />
+              <div className="relative">
+                <input
+                  type={showOwnerPasswordConfirm ? "text" : "password"}
+                  value={ownerPasswordConfirm}
+                  onChange={(e) => setOwnerPasswordConfirm(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 pr-10 border border-gray-300 rounded text-sm"
+                  placeholder="Confirm login password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowOwnerPasswordConfirm(!showOwnerPasswordConfirm)}
+                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                  title={showOwnerPasswordConfirm ? "Hide password" : "Show password"}
+                >
+                  {showOwnerPasswordConfirm ? "👁️" : "👁️‍🗨️"}
+                </button>
+              </div>
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}

@@ -1,9 +1,17 @@
+"use client";
+
+import { useState } from "react";
 import { ClaySurface } from "@/components/clay/ClaySurface";
 import { HelpSection } from "@/components/help/HelpSection";
+import { FeedbackModal } from "@/components/FeedbackModal";
 
 export default function HelpPage() {
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
   return (
     <div className="flex flex-col gap-6">
+      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+
       <ClaySurface className="flex flex-col gap-3 text-center items-center">
         <span className="text-4xl">📖</span>
         <h1 className="font-heading font-black text-2xl sm:text-3xl text-ink">
@@ -14,6 +22,12 @@ export default function HelpPage() {
           the left (or the ☰ button on mobile) to jump between sections — come back to{" "}
           <span className="font-extrabold text-violet">Help</span> anytime from there.
         </p>
+        <button
+          onClick={() => setFeedbackOpen(true)}
+          className="mt-4 px-4 py-2 bg-violet text-white rounded-lg text-sm font-medium hover:bg-violet/90 transition-colors"
+        >
+          📧 Send Feedback or Report Issue
+        </button>
       </ClaySurface>
 
       <HelpSection
