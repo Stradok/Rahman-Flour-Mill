@@ -1,5 +1,11 @@
 # Building the Windows Installer
 
+> **Recommended path first:** for installing on the mill PC, use the
+> one-script setup in [`WINDOWS_SETUP.md`](WINDOWS_SETUP.md) — no Inno
+> Setup, no manual bundling, updates via a Start-Menu shortcut. Build the
+> `.exe` below only when you need a single distributable installer file
+> (e.g. for a PC without internet, or where PowerShell scripts are blocked).
+
 How to produce `FlourMill-Setup-v<version>.exe` — a single installer that runs
 on any Windows 10/11 PC with **nothing pre-installed** (Node.js is bundled).
 

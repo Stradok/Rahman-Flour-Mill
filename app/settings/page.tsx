@@ -443,8 +443,9 @@ export default function SettingsPage() {
                       ⬇️ Download Update
                     </a>
                     <p className="text-xs text-green-700 mt-2">
-                      After downloading, close this app and run the installer. Your data is kept —
-                      it lives outside the program folder.
+                      To install: close this app, then open <strong>Start Menu → Update Flour
+                      Mill</strong> (script installs) or download and run the installer above.
+                      Your data is kept either way — it lives outside the program folder.
                     </p>
                   </div>
                 ) : (

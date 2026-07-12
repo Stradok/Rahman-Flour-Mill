@@ -113,10 +113,14 @@ git pull
    the latest release of `Stradok/Rahman-Flour-Mill` (only version metadata
    travels; no business data ever leaves the machine)
 3. If the release tag is newer than the installed version, the card shows
-   the new version number, your release notes, and a **Download Update**
-   button pointing at the installer asset
-4. Owner downloads, closes the app, runs the installer — it upgrades in
-   place (same install directory, same shortcuts)
+   the new version number and your release notes
+4. Installing the update, depending on how the PC was set up:
+   - **Script install** ([`WINDOWS_SETUP.md`](WINDOWS_SETUP.md), recommended):
+     close the app, **Start Menu → Update Flour Mill** — pulls the latest
+     code from GitHub and rebuilds. No `.exe` asset needed; the release just
+     needs the `vX.Y.Z` tag and notes.
+   - **Inno installer install**: click **Download Update**, run the new
+     `FlourMill-Setup-vX.Y.Z.exe` attached to the release — upgrades in place
 5. Relaunch → same login, same data, new version
 
 Requirements at the mill: internet access during the check/download only.

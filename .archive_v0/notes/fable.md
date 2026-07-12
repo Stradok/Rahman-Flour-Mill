@@ -87,3 +87,22 @@ Already wired to your repo (Stradok/Rahman-Flour-Mill). Your release routine on 
 3. On GitHub: Releases → New release, tag it v0.1.1, attach FlourMill-Setup-v0.1.1.exe, publish.
 
 At the mill: Settings → Software Updates → Check for Updates compares their version against your latest GitHub release, shows your release notes, and a Download Update button that fetches the new installer directly. They run it, and their data survives because it lives in AppData. Combined with the feedback button (they report a problem → you fix it on your Linux machine → push a release → they click update), you now have the full remote support loop you wanted.
+
+The push succeeded — GitHub now has all 11 commits. Refresh https://github.com/Stradok/Rahman-Flour-Mill and you'll see the clean root, the new README rendered on the front page, docs/ with the two guides, and .archive_v0/ holding the old material.
+
+The gh CLI isn't installed on this machine, so the remaining polish is a few clicks on the GitHub website itself — these are cosmetic settings that don't live in the repo files:
+
+1. Description & topics (biggest visual upgrade) — on the repo page, click the ⚙️ gear next to "About" in the right sidebar:
+- Description: Offline-first flour mill management system — encrypted local SQLite, owner/staff roles, Windows installer, GitHub-release updates
+- Topics: nextjs, typescript, sqlite, pos, inventory-management, offline-first, windows
+- Untick "Releases" won't be there — actually leave Releases ticked; that's where your installers will live. Untick Packages and Deployments if shown.
+
+2. Hide unused tabs — Settings → General → Features: untick Wikis, Issues (optional — keep if you want the mill owner or testers filing bugs there), Projects, and Discussions. Fewer empty tabs = tidier.
+
+3. Default branch protection (optional but professional) — Settings → Branches → Add rule for main: tick "Require a pull request before merging" only if you want that discipline; for a solo project it's fine to skip.
+
+4. Social preview (optional) — Settings → General → Social preview: upload one of the app screenshots (they're in .archive_v0/screenshots/) so links to the repo show an image instead of grey placeholder.
+
+5. First release — the Releases section will say "No releases published" until you build the installer on the mill laptop and publish v0.1.0 following docs/Version_Controlling.md. That's the last piece that makes the page look like a real shipped product — and it's also what activates the in-app update button.
+
+One thing to know for the future: pushing is never automatic. Whenever we commit work here, GitHub only updates after git push origin main — if the repo ever "looks old" again, that's the command to reach for.

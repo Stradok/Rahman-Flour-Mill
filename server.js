@@ -34,7 +34,9 @@ app.prepare().then(() => {
       res.statusCode = 500;
       res.end('Internal server error');
     }
-  }).listen(port, (err) => {
+    // 127.0.0.1 only: keeps Windows Firewall silent (no listen prompt) and
+    // keeps the app unreachable from the network — it's a single-PC system.
+  }).listen(port, '127.0.0.1', (err) => {
     if (err) {
       console.error('Failed to start server:', err);
       process.exit(1);

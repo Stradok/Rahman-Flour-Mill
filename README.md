@@ -144,14 +144,18 @@ manual test plan for visual checks.
 
 ## Packaging & updates
 
-- **Build the Windows installer**: [`docs/BUILD_WINDOWS_INSTALLER.md`](docs/BUILD_WINDOWS_INSTALLER.md)
-  — produces `FlourMill-Setup-v<version>.exe` with Node.js bundled; installs
-  like any Windows program, data lives in `%APPDATA%\FlourMill` and survives
-  reinstalls and updates.
-- **Releases & the in-app update button**: [`docs/Version_Controlling.md`](docs/Version_Controlling.md)
-  — bump `package.json`, publish a GitHub release tagged `vX.Y.Z` with the
-  installer attached; the mill's Settings page detects it, shows your release
-  notes, and links the download.
+- **Install on a Windows PC (recommended)**: [`docs/WINDOWS_SETUP.md`](docs/WINDOWS_SETUP.md)
+  — one PowerShell script; only prerequisite is git. Bundles portable
+  Node.js, builds, creates desktop/Start-Menu shortcuts that open the app in
+  its own window, and adds an **Update Flour Mill** shortcut that pulls the
+  latest code from GitHub and rebuilds. No admin rights, no unsigned
+  installers, no Defender/SmartScreen friction.
+- **Single-file `.exe` installer (alternative)**: [`docs/BUILD_WINDOWS_INSTALLER.md`](docs/BUILD_WINDOWS_INSTALLER.md)
+  — Inno Setup build for offline distribution.
+- **Releases & the in-app update check**: [`docs/Version_Controlling.md`](docs/Version_Controlling.md)
+  — bump `package.json`, tag `vX.Y.Z` on GitHub; the mill's Settings page
+  detects it and shows your release notes. Data always lives in
+  `%APPDATA%\FlourMill` and survives every update.
 
 ---
 
