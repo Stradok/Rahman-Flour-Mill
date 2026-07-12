@@ -11,6 +11,7 @@ export const OWNER_ONLY_PAGES = [
   "/dashboard/profit-projection",
   "/dashboard/cost-ledger",
   "/dashboard/entries",
+  "/dashboard/mill-operations",
 ] as const;
 
 export function isOwnerOnlyPage(pathname: string): boolean {

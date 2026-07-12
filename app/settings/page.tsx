@@ -62,7 +62,13 @@ export default function SettingsPage() {
   const [resetPassword, setResetPassword] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
 
-  // Permissions check
+  useEffect(() => {
+    loadSettings();
+    loadStaff();
+  }, []);
+
+  // Permissions check — must come after every hook or React throws a
+  // hooks-order error the moment a staff session finishes loading.
   if (session?.user && (session.user as any).role !== 'owner') {
     return (
       <div className="text-center py-12">
@@ -71,11 +77,6 @@ export default function SettingsPage() {
       </div>
     );
   }
-
-  useEffect(() => {
-    loadSettings();
-    loadStaff();
-  }, []);
 
   const loadSettings = async () => {
     try {

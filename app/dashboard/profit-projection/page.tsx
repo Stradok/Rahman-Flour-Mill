@@ -1,3 +1,4 @@
+import { OwnerGuard } from "@/components/OwnerGuard";
 import { GrindingReminderBanner } from "@/components/dashboard/GrindingReminderBanner";
 import { SalesPerformanceCards } from "@/components/dashboard/SalesPerformanceCards";
 import { FinancialHealthCards } from "@/components/dashboard/FinancialHealthCards";
@@ -6,6 +7,7 @@ import { ProductionMixChart } from "@/components/dashboard/ProductionMixChart";
 
 export default function ProfitProjectionPage() {
   return (
+    <OwnerGuard>
     <div className="flex flex-col gap-6">
       <GrindingReminderBanner />
       <SalesPerformanceCards />
@@ -13,5 +15,6 @@ export default function ProfitProjectionPage() {
       <OperationalSnapshotCards />
       <ProductionMixChart />
     </div>
+    </OwnerGuard>
   );
 }
