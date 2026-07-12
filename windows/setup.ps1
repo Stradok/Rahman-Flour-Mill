@@ -1,5 +1,5 @@
-# ============================================================================
-#  Al Rehman Flour Mills — one-script Windows install & update
+﻿# ============================================================================
+#  Al Rehman Flour Mills  -  one-script Windows install & update
 #
 #  Prerequisite on the PC: git  (winget install --id Git.Git -e)
 #
@@ -10,9 +10,9 @@
 #  Updates: double-click the "Update Flour Mill" shortcut this script creates
 #  (it re-runs this script: git pull + rebuild; business data is never touched).
 #
-#  Design notes — why Defender/SmartScreen stay quiet:
+#  Design notes  -  why Defender/SmartScreen stay quiet:
 #    * no admin rights, everything under %LOCALAPPDATA% (no UAC prompt)
-#    * no unsigned .exe is ever downloaded — only the officially signed
+#    * no unsigned .exe is ever downloaded  -  only the officially signed
 #      node.exe inside Node.js' own ZIP from nodejs.org over HTTPS
 #    * the server binds 127.0.0.1 only, so Windows Firewall never prompts
 #    * no Defender exclusions are added; none are needed
@@ -99,13 +99,13 @@ Step "Application code"
 if (Test-Path (Join-Path $AppDir ".git")) {
     Write-Host "    updating from GitHub..."
     git -C $AppDir fetch --depth 1 origin $Branch
-    if ($LASTEXITCODE -ne 0) { Fail "git fetch failed — is the internet connected?" }
+    if ($LASTEXITCODE -ne 0) { Fail "git fetch failed  -  is the internet connected?" }
     git -C $AppDir reset --hard "origin/$Branch" | Out-Null
     Ok "now at: $(git -C $AppDir log -1 --format='%h %s')"
 } else {
     Write-Host "    cloning repository..."
     git clone --depth 1 --branch $Branch $RepoUrl $AppDir
-    if ($LASTEXITCODE -ne 0) { Fail "git clone failed — is the internet connected?" }
+    if ($LASTEXITCODE -ne 0) { Fail "git clone failed  -  is the internet connected?" }
     Ok "cloned"
 }
 
@@ -141,7 +141,7 @@ try {
 # ---------------------------------------------------------------- launcher files
 Step "Creating launcher and shortcuts"
 
-# launch.ps1 — starts the server hidden (if not already up), waits, opens Edge app window
+# launch.ps1  -  starts the server hidden (if not already up), waits, opens Edge app window
 @"
 `$ErrorActionPreference = 'SilentlyContinue'
 `$env:Path = '$NodeDir;' + `$env:Path
@@ -189,7 +189,7 @@ foreach ($target in @(
 }
 Ok "shortcuts: Desktop 'Flour Mill', Start Menu 'Flour Mill' + 'Update Flour Mill'"
 
-# uninstall.ps1 — removes the app but never the business data
+# uninstall.ps1  -  removes the app but never the business data
 @"
 Write-Host 'This removes the Flour Mill APP. Business data in %APPDATA%\FlourMill is KEPT.' -ForegroundColor Yellow
 if ((Read-Host 'Type YES to continue') -ne 'YES') { exit }
@@ -219,5 +219,5 @@ Write-Host "============================================================" -Foreg
 if (-not $NoLaunch) {
     Step "Launching"
     Start-Process "$env:SystemRoot\System32\wscript.exe" -ArgumentList """$(Join-Path $Root 'FlourMill.vbs')"""
-    Ok "opening $AppUrl in an app window — first visit shows the Setup screen"
+    Ok "opening $AppUrl in an app window  -  first visit shows the Setup screen"
 }

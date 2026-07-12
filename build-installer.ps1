@@ -1,4 +1,4 @@
-# Flour Mill Management System - Automated Installer Build Script
+﻿# Flour Mill Management System - Automated Installer Build Script
 # This script builds the Windows installer automatically
 
 param(
@@ -8,15 +8,15 @@ param(
     [switch]$OpenOutput = $false
 )
 
-Write-Host "`n╔════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║  Flour Mill Management System - Installer Builder         ║" -ForegroundColor Cyan
-Write-Host "╚════════════════════════════════════════════════════════════╝`n" -ForegroundColor Cyan
+Write-Host "`n+============================================================+" -ForegroundColor Cyan
+Write-Host "|  Flour Mill Management System - Installer Builder         |" -ForegroundColor Cyan
+Write-Host "+============================================================+`n" -ForegroundColor Cyan
 
 # Color functions
-function Write-Success { Write-Host "✅ $args" -ForegroundColor Green }
-function Write-Error-Custom { Write-Host "❌ $args" -ForegroundColor Red }
-function Write-Info { Write-Host "ℹ️  $args" -ForegroundColor Blue }
-function Write-Warning-Custom { Write-Host "⚠️  $args" -ForegroundColor Yellow }
+function Write-Success { Write-Host "[OK] $args" -ForegroundColor Green }
+function Write-Error-Custom { Write-Host "[FAIL] $args" -ForegroundColor Red }
+function Write-Info { Write-Host "[INFO]  $args" -ForegroundColor Blue }
+function Write-Warning-Custom { Write-Host "[WARN]  $args" -ForegroundColor Yellow }
 
 # Check prerequisites
 Write-Host "Checking prerequisites..." -ForegroundColor Yellow
@@ -46,7 +46,7 @@ Write-Success "Inno Setup found"
 
 # Build Next.js app
 if (-not $SkipBuild) {
-    Write-Host "`n📦 Building Next.js application..." -ForegroundColor Yellow
+    Write-Host "`n Building Next.js application..." -ForegroundColor Yellow
 
     cd $BuildDir
 
@@ -70,7 +70,7 @@ if (-not $SkipBuild) {
 }
 
 # Update version in Inno Setup script
-Write-Host "`n🔧 Updating installer version..." -ForegroundColor Yellow
+Write-Host "`n Updating installer version..." -ForegroundColor Yellow
 
 $issFile = Join-Path $BuildDir "FlourMill.iss"
 if (-not (Test-Path $issFile)) {
@@ -94,7 +94,7 @@ if (-not (Test-Path $outputDir)) {
 }
 
 # Compile with Inno Setup
-Write-Host "`n🔨 Compiling installer..." -ForegroundColor Yellow
+Write-Host "`n Compiling installer..." -ForegroundColor Yellow
 
 $outputFile = "FlourMill-Setup-v$Version.exe"
 $outputPath = Join-Path $outputDir $outputFile
@@ -118,9 +118,9 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 # Summary
-Write-Host "`n╔════════════════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║                    BUILD COMPLETE ✅                       ║" -ForegroundColor Green
-Write-Host "╚════════════════════════════════════════════════════════════╝`n" -ForegroundColor Green
+Write-Host "`n+============================================================+" -ForegroundColor Green
+Write-Host "|                    BUILD COMPLETE [OK]                       |" -ForegroundColor Green
+Write-Host "+============================================================+`n" -ForegroundColor Green
 
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host "1. Test the installer on a clean Windows VM/machine"

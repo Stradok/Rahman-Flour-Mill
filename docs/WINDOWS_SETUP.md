@@ -101,6 +101,7 @@ use the Inno installer path instead.
 | Problem | Fix |
 |---|---|
 | `fatal: could not create leading directories of '$env:LOCALAPPDATA\...': Invalid argument`, or `Processing -File '$env:LOCALAPPDATA\...' failed: ... path's format is not supported` | You're in **Command Prompt**, not PowerShell — cmd doesn't understand `$env:...` and passes it through literally. Close the window, open PowerShell instead (Windows key → type `PowerShell` → Enter; prompt must show `PS C:\...>`), and rerun the same commands |
+| `The string is missing the terminator: "` / `Missing closing '}'` when running `setup.ps1` | A stale copy of the script with non-ASCII characters (em dashes, arrows) — Windows PowerShell 5.1 can misread those without a BOM. Fixed in the repo (the script is now plain ASCII with a UTF-8 BOM); run `git pull` in the `app` folder, or re-clone, and try again |
 | `git` not recognized after winget | Close and reopen PowerShell (PATH refresh) |
 | Script exits at "git clone/fetch failed" | No internet, or GitHub unreachable — retry |
 | Node download fails | The script retries with a pinned version; if nodejs.org is blocked, download the `node-v22.x-win-x64.zip` manually and extract it to `%LOCALAPPDATA%\FlourMill\node` so `node.exe` sits directly inside |
