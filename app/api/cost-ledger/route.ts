@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireOwner } from "@/lib/authz";
+import { auth } from "@/auth";
 import { unlockWithStoredPassword, getDatabase } from "@/lib/db";
 import { costOverheadEntries } from "@/lib/schema";
 import { desc } from "drizzle-orm";
@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
 
 export async function GET() {
   try {
-    const session = await requireOwner();
+    const session = await auth();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     unlockWithStoredPassword();
@@ -27,7 +27,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const session = await requireOwner();
+    const session = await auth();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();

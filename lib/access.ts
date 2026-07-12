@@ -2,16 +2,15 @@
  * Role-based access rules shared by the proxy (route protection) and the
  * sidebar (link visibility). Client-safe: no server imports allowed here.
  *
- * Staff must never see financials — costs, expenses, profit, or the audit
- * ledgers that contain them. API routes enforce the same rule server-side;
- * this list only controls navigation and page access.
+ * Staff work the till and log operations: Sales, Mill Operations, Product &
+ * Packaging, and the Cost & Overhead Ledger (data entry). Owner-only areas
+ * are the analytical/administrative ones: profit figures, the Entries audit
+ * page, and Settings. API routes enforce the same split server-side.
  */
 export const OWNER_ONLY_PAGES = [
   "/settings",
   "/dashboard/profit-projection",
-  "/dashboard/cost-ledger",
   "/dashboard/entries",
-  "/dashboard/mill-operations",
 ] as const;
 
 export function isOwnerOnlyPage(pathname: string): boolean {

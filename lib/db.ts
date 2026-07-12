@@ -75,6 +75,9 @@ function openConnection(): Database.Database {
     db = new Database(DB_FILE, { fileMustExist: true });
     try {
       assertReadable(db); // plaintext and intact?
+      // SQLite3MultipleCiphers refuses to rekey a WAL database — drop to
+      // rollback journal for the encryption step, WAL is restored below.
+      db.pragma("journal_mode = DELETE");
       db.pragma(`rekey='${escapeKey(password)}'`); // encrypt in place
       assertReadable(db);
       console.log("[db] migrated plaintext database to encrypted storage");
@@ -169,12 +172,19 @@ export function verifyDatabasePassword(candidate: string): boolean {
 /**
  * Re-encrypts the database under a new password and updates the key file.
  * Requires the current stored key to be valid (the connection must open).
+ * Rekeying is illegal in WAL mode, so the journal is temporarily switched
+ * to rollback mode for the operation.
  */
 export function rekeyDatabase(newPassword: string): void {
   const db = openConnection();
-  db.pragma(`rekey='${escapeKey(newPassword)}'`);
-  assertReadable(db);
-  saveEncryptionPassword(newPassword);
+  db.pragma("journal_mode = DELETE");
+  try {
+    db.pragma(`rekey='${escapeKey(newPassword)}'`);
+    assertReadable(db);
+    saveEncryptionPassword(newPassword);
+  } finally {
+    db.pragma("journal_mode = WAL");
+  }
 }
 
 export function closeDatabase(): void {

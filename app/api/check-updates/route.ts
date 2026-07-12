@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { auth } from "@/auth";
+
+/**
+ * Release flow (developer side):
+ *   1. bump "version" in package.json
+ *   2. build FlourMill-Setup-v<version>.exe (docs/BUILD_WINDOWS_INSTALLER.md)
+ *   3. publish a GitHub release tagged v<version> with the .exe attached
+ * The mill's Settings page then offers the download.
+ */
+const UPDATE_REPO = process.env.UPDATE_REPO || "Stradok/Rahman-Flour-Mill";
 
 interface GitHubRelease {
   tag_name: string;
@@ -15,6 +25,9 @@ interface GitHubRelease {
 }
 
 export async function GET() {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     // Get current version from package.json
     const packageJsonPath = join(process.cwd(), "package.json");
@@ -23,7 +36,7 @@ export async function GET() {
 
     // Fetch latest release from GitHub
     const response = await fetch(
-      "https://api.github.com/repos/yourusername/flour-mill/releases/latest",
+      `https://api.github.com/repos/${UPDATE_REPO}/releases/latest`,
       {
         headers: {
           "User-Agent": "FlourMill-Client",

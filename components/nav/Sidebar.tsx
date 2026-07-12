@@ -26,9 +26,9 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Dashboard",
     items: [
       { href: "/dashboard/profit-projection", label: "Profit Projection", icon: "📊", ownerOnly: true },
-      { href: "/dashboard/mill-operations", label: "Mill Operations", icon: "🚚", ownerOnly: true },
+      { href: "/dashboard/mill-operations", label: "Mill Operations", icon: "🚚" },
       { href: "/dashboard/product-packaging", label: "Product & Packaging", icon: "🏷️" },
-      { href: "/dashboard/cost-ledger", label: "Cost & Overhead Ledger", icon: "📋", ownerOnly: true },
+      { href: "/dashboard/cost-ledger", label: "Cost & Overhead Ledger", icon: "📋" },
       { href: "/dashboard/entries", label: "Entries", icon: "📜", ownerOnly: true },
     ],
   },

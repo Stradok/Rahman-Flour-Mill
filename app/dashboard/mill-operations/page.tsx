@@ -1,4 +1,3 @@
-import { OwnerGuard } from "@/components/OwnerGuard";
 import { GrindingReminderBanner } from "@/components/dashboard/GrindingReminderBanner";
 import { MillOperationsStats } from "@/components/dashboard/MillOperationsStats";
 import { StockCheck } from "@/components/shared/StockCheck";
@@ -7,7 +6,6 @@ import { SalesSearch } from "@/components/dashboard/SalesSearch";
 
 export default function MillOperationsPage() {
   return (
-    <OwnerGuard>
     <div className="flex flex-col gap-6">
       <GrindingReminderBanner />
       <MillOperationsStats />
@@ -15,6 +13,5 @@ export default function MillOperationsPage() {
       <DailyStockTable />
       <SalesSearch />
     </div>
-    </OwnerGuard>
   );
 }

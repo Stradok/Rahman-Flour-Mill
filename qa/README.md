@@ -2,6 +2,27 @@
 
 This directory contains comprehensive testing materials for the Al Rehman Flour Mills Management System.
 
+## ⚡ Automated Test Suite (run this first)
+
+```bash
+npm run test:qa
+```
+
+`run-tests.mjs` boots an isolated production server on port 3111 with a
+**throwaway database** (your `./data` is never touched) and runs 40+ real
+HTTP tests: setup validation, encrypted-database verification, login,
+staff creation, every role-based access rule (staff vs owner, APIs and
+pages), business-flow smoke tests, database reset protection, credential
+rotation, and the emergency recovery flow.
+
+- Requires: nothing running on port 3111 (`pkill -f "next.*3111"` if a run was interrupted)
+- Full coverage of the emergency recovery path: `RECOVERY_CODE=<code> npm run test:qa`
+  (the code is intentionally not stored anywhere in this repository)
+- Exit code 0 = all passed. Current status: **44/44 passing**.
+
+The markdown files below are the *manual* test plan for things a script
+can't judge (visual layout, printed bills, real mouse/keyboard flows).
+
 ## 📋 Files
 
 ### 1. **test-suite.md**

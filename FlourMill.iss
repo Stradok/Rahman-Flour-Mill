@@ -48,6 +48,12 @@ Source: "public\*"; DestDir: "{app}\public"; Flags: ignoreversion recursesubdirs
 Source: "package.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "package-lock.json"; DestDir: "{app}"; Flags: ignoreversion
 
+; Runtime dependencies — next start cannot run without these
+Source: "node_modules\*"; DestDir: "{app}\node_modules"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "server.js"; DestDir: "{app}"; Flags: ignoreversion
+; Holds AUTH_SECRET — create .env on the build laptop before compiling
+Source: ".env"; DestDir: "{app}"; Flags: ignoreversion
+
 ; Launcher Script
 Source: "launcher.vbs"; DestDir: "{app}"; Flags: ignoreversion
 

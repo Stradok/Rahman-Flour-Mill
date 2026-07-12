@@ -24,6 +24,32 @@ export default function SettingsPage() {
   const [curDbPw, setCurDbPw] = useState('');
   const [newDbPw, setNewDbPw] = useState('');
 
+  // Update checking
+  const [updateInfo, setUpdateInfo] = useState<null | {
+    currentVersion: string;
+    latestVersion?: string;
+    isUpdateAvailable: boolean;
+    releaseNotes?: string;
+    downloadUrl?: string;
+    message?: string;
+    error?: string;
+  }>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+
+  const handleCheckUpdates = async () => {
+    setCheckingUpdate(true);
+    setUpdateInfo(null);
+    try {
+      const res = await fetch('/api/check-updates');
+      const data = await res.json();
+      setUpdateInfo(data);
+    } catch {
+      setUpdateInfo({ currentVersion: '?', isUpdateAvailable: false, error: 'Update check failed — check the internet connection' });
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
   const rotateCredential = async (payload: Record<string, string>, clear: () => void) => {
     setLoading(true);
     setError('');
@@ -383,30 +409,51 @@ export default function SettingsPage() {
           </ClayCard>
 
           <ClayCard accent="violet" className="p-6">
-            <h2 className="text-xl font-bold mb-4">Application Version</h2>
+            <h2 className="text-xl font-bold mb-4">Software Updates</h2>
             <p className="text-sm text-muted mb-4">
-              Version <strong>0.1.0</strong> (Beta)
+              Version <strong>{updateInfo?.currentVersion ?? '0.1.0'}</strong>
             </p>
-            <ClayButton
-              onClick={async () => {
-                try {
-                  const res = await fetch('/api/check-updates');
-                  const data = await res.json();
-                  if (data.isUpdateAvailable) {
-                    alert(
-                      `New version ${data.latestVersion} available!\n\nDownload: ${data.downloadUrl}`
-                    );
-                  } else {
-                    alert('You are running the latest version.');
-                  }
-                } catch (err) {
-                  alert('Failed to check for updates');
-                }
-              }}
-              className="w-full"
-            >
-              Check for Updates
+
+            <ClayButton onClick={handleCheckUpdates} disabled={checkingUpdate} className="w-full">
+              {checkingUpdate ? 'Checking...' : 'Check for Updates'}
             </ClayButton>
+
+            {updateInfo && (
+              <div className="mt-4">
+                {updateInfo.error ? (
+                  <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-800">
+                    {updateInfo.error}
+                  </div>
+                ) : updateInfo.isUpdateAvailable ? (
+                  <div className="bg-green-50 border border-green-200 rounded p-4 text-sm">
+                    <p className="font-medium text-green-900 mb-1">
+                      🎉 Version {updateInfo.latestVersion} is available!
+                    </p>
+                    {updateInfo.releaseNotes && (
+                      <p className="text-xs text-green-800 mb-3 whitespace-pre-line max-h-32 overflow-y-auto">
+                        {updateInfo.releaseNotes}
+                      </p>
+                    )}
+                    <a
+                      href={updateInfo.downloadUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full text-center px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700"
+                    >
+                      ⬇️ Download Update
+                    </a>
+                    <p className="text-xs text-green-700 mt-2">
+                      After downloading, close this app and run the installer. Your data is kept —
+                      it lives outside the program folder.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
+                    ✅ {updateInfo.message || 'You are running the latest version.'}
+                  </div>
+                )}
+              </div>
+            )}
           </ClayCard>
 
           <ClayCard accent="violet" className="p-6">
