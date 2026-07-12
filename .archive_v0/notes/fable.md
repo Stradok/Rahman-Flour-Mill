@@ -50,3 +50,40 @@ One security decision I made differently than you asked: the code itself is not 
 
 I also added two new cards in Settings → Session & Security — Change Owner Password and Change Database Password — so after using recovery, the owner can rotate both secrets (each requires the current one first).                                                                                                                             
 Verified with 12 standalone tests (hash match, near-miss codes rejected, owner restored with staff accounts untouched, a staff member squatting on the username admin gets removed, database re-opens under the new key) plus a clean production b try it: log in as a staff account to confirm the menu shrinks, thentest the recovery flow.
+============================================
+Prompt -> I want the staff memeber to have access to the following pages Sales , Mill operations ,Product and packaging , Cost and overhead & ledger. Make sure the qa tests are ready  to run @qa/  and then also write me the steps to make an exe for this on the mills laptop that I have because I am working on Linux plus also make sure the update mehanism is there like they can update the software like from clicking update button and it like pulls in update from github
+Answer-> All done — everything is committed and all 44 automated tests pass. Here's the full picture:
+
+1. Staff access (as you specified)
+
+Staff now see and can use: Quick Bill & Ledger, Mill Operations, Product & Packaging, Cost & Overhead Ledger. Owner-only: Profit Projection, Entries, Settings. Enforced in the sidebar, at the routing layer, and in the APIs. Restart your dev server and re-login to see it.
+
+2. QA suite — ready to run
+
+npm run test:qa
+
+This boots its own isolated server on port 3111 with a throwaway database (your real ./data is never touched) and runs 44 end-to-end tests over real HTTP: setup validation, proof the database file is encrypted on disk, login, staff creation, every staff/owner access rule, reset protection, password rotation, and the emergency recovery flow. It found and I fixed a real bug: the cipher library refuses to re-encrypt a database in WAL mode, which was breaking the database-password change and emergency recovery with a 500 — both now work and are covered by tests. Current result: 44/44 passing. The old markdown files in qa/ remain as the manual checklist for visual things a script can't judge.
+
+3. Building the .exe on the mill laptop
+
+The installer files already exist in the repo (FlourMill.iss, launcher.vbs, server.js, build-installer.ps1) — I fixed the Inno script, which was missing node_modules, server.js, and .env (the installed app couldn't have started). On the Windows laptop:
+
+1. Install Node.js LTS, Git, and Inno Setup 6 (default path).
+2. git clone https://github.com/Stradok/Rahman-Flour-Mill.git and cd into it.
+3. Create a .env file containing AUTH_SECRET=<any long random string> — login breaks without it.
+4. npm ci
+5. Download the Node Windows Binary (.zip) from nodejs.org, extract it, and copy its contents into a .node-runtime\ folder in the project (so .node-runtime\node.exe exists) — the installer bundles this so the mill PC needs nothing installed.
+6. Run .\build-installer.ps1 in PowerShell (or npm run build then compile FlourMill.iss in Inno Setup).
+7. Your installer is at Output\FlourMill-Setup-v0.1.0.exe. Install it, launch from the desktop icon — it starts the server invisibly and opens Edge in app mode. The database lives in %APPDATA%\FlourMill, outside the program folder, so reinstalls and updates never touch the data.
+
+Honest caveat: this packaging flow hasn't been exercised on a real Windows machine yet — test the installer on the laptop yourself before handing it over, and bring me any error it shows.
+
+4. The update mechanism
+
+Already wired to your repo (Stradok/Rahman-Flour-Mill). Your release routine on any machine:
+
+1. Bump "version" in package.json (e.g. 0.1.1), commit, push.
+2. Build a fresh installer (steps above).
+3. On GitHub: Releases → New release, tag it v0.1.1, attach FlourMill-Setup-v0.1.1.exe, publish.
+
+At the mill: Settings → Software Updates → Check for Updates compares their version against your latest GitHub release, shows your release notes, and a Download Update button that fetches the new installer directly. They run it, and their data survives because it lives in AppData. Combined with the feedback button (they report a problem → you fix it on your Linux machine → push a release → they click update), you now have the full remote support loop you wanted.

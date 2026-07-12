@@ -1,421 +1,173 @@
-# Build Windows Installer - Complete Guide
+# Building the Windows Installer
 
-Step-by-step instructions to build the final Windows installer for Flour Mill Management System.
+How to produce `FlourMill-Setup-v<version>.exe` — a single installer that runs
+on any Windows 10/11 PC with **nothing pre-installed** (Node.js is bundled).
 
-## Prerequisites
-
-### Software to Install
-
-1. **Inno Setup** (free)
-   - Download: https://jrsoftware.org/isdl.php
-   - Install to default location
-   - Required for building the installer
-
-2. **Node.js** (for building the app)
-   - Download: https://nodejs.org/en/download/ (LTS version)
-   - Install to default location
-   - Required only for building, not included in installer
-
-### System Requirements
-
-- Windows 10 or later
-- At least 1 GB free disk space
-- 4 GB RAM (for build process)
+The build itself must happen **on a Windows machine** (Inno Setup is
+Windows-only). Development can happen anywhere; only this packaging step
+needs the Windows laptop.
 
 ---
 
-## Step 1: Prepare Build Files
+## How the packaged app works
 
-### 1.1 Download Node.js Portable (for bundling)
+```
+FlourMill-Setup-v0.1.0.exe
+  └─ installs to C:\Program Files\FlourMill\
+       ├─ node_runtime\        bundled portable Node.js (node.exe)
+       ├─ .next\               production build of the app
+       ├─ node_modules\        runtime dependencies (incl. SQLite cipher driver)
+       ├─ server.js            production server (sets DB path to AppData)
+       ├─ launcher.vbs         desktop shortcut target: starts server silently,
+       │                       opens Edge in app mode (no browser chrome)
+       └─ .env                 AUTH_SECRET for session signing
 
-The installer needs to bundle Node.js so users don't need to install it separately.
+  data lives OUTSIDE the install dir — reinstalls/updates never touch it:
+  C:\Users\<name>\AppData\Roaming\FlourMill\
+       ├─ flour-mill.db        encrypted database
+       └─ .key                 database password (owner-set at first run)
+```
+
+---
+
+## One-time machine setup (build laptop)
+
+1. **Node.js LTS** (20 or newer) — https://nodejs.org → verify with `node --version`
+2. **Git** — https://git-scm.com
+3. **Inno Setup 6** — https://jrsoftware.org/isdl.php → install to the
+   default path (`C:\Program Files (x86)\Inno Setup 6\`), the build script
+   looks for it there.
+
+---
+
+## Build steps
+
+Open **PowerShell** and run each step:
+
+### 1. Get the code
 
 ```powershell
-# Download Node.js portable x64
-# From: https://nodejs.org/dist/v20.11.1/node-v20.11.1-win-x64.zip
-# (Replace v20.11.1 with latest LTS version)
-
-# Extract to: C:\flour-mill-build\.node-runtime
-# The extracted folder should contain node.exe, npm, etc.
+git clone https://github.com/Stradok/Rahman-Flour-Mill.git
+cd Rahman-Flour-Mill
+# building an update? make sure you're on the latest code:
+git pull
 ```
 
-**Expected structure:**
+### 2. Create `.env`
+
+The app refuses logins without a session-signing secret. Create a file named
+`.env` in the project root containing:
+
 ```
-.node-runtime/
-├── node.exe
-├── npm
-├── npm.cmd
-├── npx
-├── npx.cmd
-├── lib/
-└── [other Node.js files]
+AUTH_SECRET=<paste a long random string here>
 ```
 
-### 1.2 Install Project Dependencies
+Generate one with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+
+> Keep this file out of git (it is gitignored). Reuse the same secret for
+> future builds so existing login sessions survive updates.
+
+### 3. Install dependencies
 
 ```powershell
-cd C:\flour-mill-build
-npm install
+npm ci
 ```
 
-### 1.3 Build the Next.js Application
+### 4. Bundle portable Node.js
+
+Download the **Windows Binary (.zip)** — not the installer — from
+https://nodejs.org/en/download (e.g. `node-v22.x.x-win-x64.zip`). Extract it,
+then copy the **contents** of the extracted folder into `.node-runtime\` at
+the project root, so that this file exists:
+
+```
+.node-runtime\node.exe
+```
+
+This only needs refreshing when you want a newer Node — otherwise reuse it
+for every build.
+
+### 5. Run the automated build
+
+```powershell
+.\build-installer.ps1 -Version "0.1.0"
+```
+
+The script verifies prerequisites, runs `npm run build`, stamps the version
+into `FlourMill.iss`, and compiles the installer. Output:
+
+```
+Output\FlourMill-Setup-v0.1.0.exe     (~250-400 MB, Node.js included)
+```
+
+<details>
+<summary>Manual alternative (if the script fails)</summary>
 
 ```powershell
 npm run build
+# then open FlourMill.iss in Inno Setup Compiler and press Compile,
+# after updating these two lines in the file:
+#   #define MyAppVersion "0.1.0"
+#   #define SourceDir "C:\actual\path\to\Rahman-Flour-Mill"
 ```
-
-This creates the optimized production build in `.next/` directory.
+</details>
 
 ---
 
-## Step 2: Prepare Installer Files
+## Test before shipping
 
-### 2.1 Create Build Directory Structure
-
-```
-C:\flour-mill-build\
-├── .node-runtime\          (Node.js portable)
-├── .next\                  (Next.js build output)
-├── public\                 (Static assets, icon)
-├── package.json
-├── package-lock.json
-├── launcher.vbs            (Launcher script)
-├── server.js               (Production server)
-├── FlourMill.iss           (Inno Setup script)
-├── LICENSE
-└── README.md
-```
-
-### 2.2 Prepare Icon (Optional but Recommended)
-
-Create or place an icon file:
-- **File**: `public\icon.ico`
-- **Size**: 256x256 pixels minimum
-- **Format**: .ico (Windows icon format)
-
-If no icon:
-- Inno Setup will use default Windows icon
-- Still works, just less polished
-
-### 2.3 Edit FlourMill.iss (Important!)
-
-Open `FlourMill.iss` and update this line to match your build directory:
-
-```ini
-#define SourceDir "C:\path\to\flour-mill"
-```
-
-Change to your actual path:
-```ini
-#define SourceDir "C:\flour-mill-build"
-```
-
-Save the file.
-
----
-
-## Step 3: Build Installer with Inno Setup
-
-### 3.1 Open Inno Setup
-
-1. Launch **Inno Setup Compiler**
-2. File → Open
-3. Select `FlourMill.iss`
-
-### 3.2 Compile
-
-Click the **Compile** button (or Script → Compile)
-
-**This will:**
-- Read all the files from `C:\flour-mill-build\`
-- Bundle them into one installer
-- Create `Output\FlourMill-Setup-v0.1.0.exe`
-- Show "Compilation completed successfully" when done
-
-### 3.3 Output
-
-The installer will be created at:
-```
-C:\flour-mill-build\Output\FlourMill-Setup-v0.1.0.exe
-```
-
-Size: Approximately 200-250 MB (includes bundled Node.js)
-
----
-
-## Step 4: Test the Installer
-
-### 4.1 Test on Clean Windows (Recommended)
-
-Best practice: Test on a clean Windows VM or separate machine without Node.js installed.
-
-**Steps:**
-1. Copy `FlourMill-Setup-v0.1.0.exe` to test machine
-2. Double-click to run
-3. Follow installation wizard
-4. Click Finish to launch app
-5. Test the complete flow:
-   - Setup page → create owner account
-   - Login with owner credentials
-   - Add some test data
-   - Verify Settings panel works
-   - Test logout
-
-### 4.2 Test Installation Paths
-
-**Default installation:**
-```
-C:\Program Files\FlourMill\
-├── node_runtime\
-├── .next\
-├── public\
-├── launcher.vbs
-├── server.js
-└── [other files]
-```
-
-**Database location:**
-```
-C:\Users\[YourName]\AppData\Local\FlourMill\
-├── flour-mill.db     (encrypted database)
-└── .key              (encryption password)
-```
-
-### 4.3 Verify Features
-
-Test these to ensure everything works:
-
-```
-✅ Installation completes without errors
-✅ Shortcuts created (Desktop + Start Menu)
-✅ App launches when you click shortcut
-✅ No terminal window visible
-✅ Edge opens in app mode (no address bar)
-✅ Setup page appears on first run
-✅ Can complete setup (create database + owner account)
-✅ Login works with owner credentials
-✅ Dashboard loads without errors
-✅ Can enter test transactions
-✅ Settings panel accessible (owner only)
-✅ Logout works
-✅ Can uninstall cleanly
-✅ Database file persists after uninstall
-```
-
-### 4.4 Performance Check
-
-On the 4GB RAM machine (minimum spec):
-```
-✅ Installer: Should take < 2 minutes
-✅ Launch: Should take < 5 seconds
-✅ App load: Dashboard should load in < 3 seconds
-✅ Memory: Should use < 300 MB
-```
-
-If slower than expected:
-- Check antivirus isn't scanning the installation
-- Verify Node.js processes aren't duplicating
-- Try launching `launcher.vbs` directly to see error messages
-
----
-
-## Step 5: Create GitHub Release
-
-Once testing is complete:
-
-### 5.1 On GitHub
-
-1. Go to your repo: https://github.com/Stradok/Rahman-Flour-Mill
-2. Click **Releases** (right sidebar)
-3. Click **Draft a new release**
-
-### 5.2 Fill in Release Details
-
-**Tag version:** `v0.1.0`
-
-**Release title:** 
-```
-Version 0.1.0 - Initial Release
-```
-
-**Release notes:**
-```markdown
-## ✨ First Release
-
-### Features
-- 🔐 AES-256 encrypted database
-- 👥 Multi-user with role-based access
-- 💰 Sales & billing management
-- 📊 Cost tracking & reporting
-- 🌾 Production logging
-- 📋 Audit trails
-
-### Installation
-1. Download FlourMill-Setup-v0.1.0.exe
-2. Run the installer
-3. Complete first-run setup
-4. Start using!
-
-### System Requirements
-- Windows 10 or later
-- 4 GB RAM
-- 500 MB free disk space
-
-### Security
-- All data encrypted locally (AES-256)
-- No cloud, no internet required
-- Multi-user with passwords
-
-See [Documentation](docs/) for complete details.
-```
-
-### 5.3 Upload Installer
-
-Click **Choose a file** (under "Attach binaries")
-
-Select: `FlourMill-Setup-v0.1.0.exe`
-
-### 5.4 Publish
-
-Click **Publish release**
-
----
-
-## Step 6: Users Can Download & Install
-
-Users will now see:
-
-```
-https://github.com/Stradok/Rahman-Flour-Mill/releases
-
-Version 0.1.0 - Initial Release
-├─ FlourMill-Setup-v0.1.0.exe (214 MB)
-```
-
-They can:
-1. Click to download
-2. Run installer
-3. Follow wizard
-4. Start using the app!
-
----
-
-## Troubleshooting
-
-### Installer Won't Compile
-
-**Problem:** Inno Setup shows errors when compiling
-
-**Solutions:**
-1. Verify `#define SourceDir` path is correct
-2. Make sure all files exist in that directory
-3. Check `.node-runtime\` folder has node.exe
-4. Check `.next\` folder exists (from `npm run build`)
-
-### Installer Won't Launch App
-
-**Problem:** Installer finishes but app doesn't open
-
-**Solutions:**
-1. Check `launcher.vbs` exists in installation folder
-2. Verify Node.js runtime is in `node_runtime\`
-3. Open Command Prompt and run:
-   ```powershell
-   C:\Program Files\FlourMill\launcher.vbs
-   ```
-   Look for error messages
-
-### App Won't Start on Test Machine
-
-**Problem:** Installer works, but app crashes
-
-**Solutions:**
-1. Check Windows is fully updated
-2. Run as Administrator
-3. Check antivirus isn't blocking node.exe
-4. Verify Edge is installed (Windows 10/11 includes it)
-
-### Database Shows "Readonly"
-
-**Problem:** Cannot save data after install
-
-**Solutions:**
-1. Close the app
-2. Run as Administrator
-3. Right-click installation folder → Properties → Security
-4. Give user account "Full Control"
-5. Restart app
-
----
-
-## Update Process
-
-To build version 0.2.0:
-
-1. Update `package.json` version to `0.2.0`
-2. Make code changes
-3. Run `npm run build`
-4. Update `#define MyAppVersion "0.2.0"` in FlourMill.iss
-5. Compile new installer
-6. Test
-7. Create GitHub Release v0.2.0
-8. Users will see update available in Settings
-
----
-
-## Advanced: Automate the Build
-
-You can create a PowerShell script to automate this:
+Run the automated suite first (it exercises the same production server the
+installer ships):
 
 ```powershell
-# build-installer.ps1
-
-param(
-    [string]$Version = "0.1.0",
-    [string]$SourceDir = "C:\flour-mill-build"
-)
-
-Write-Host "Building Flour Mill Installer v$Version..."
-
-# Build Next.js
-Write-Host "Building Next.js application..."
-cd $SourceDir
-npm run build
-
-# Update version in Inno Setup script
-Write-Host "Updating version in installer script..."
-(Get-Content "FlourMill.iss") -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$Version`"" | Set-Content "FlourMill.iss"
-
-# Compile with Inno Setup
-Write-Host "Compiling installer..."
-& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "FlourMill.iss"
-
-Write-Host "Done! Installer created at: $SourceDir\Output\FlourMill-Setup-v$Version.exe"
+npm run test:qa
 ```
 
-Usage:
-```powershell
-.\build-installer.ps1 -Version "0.2.0"
-```
+All tests must pass. Then install the built `.exe` on the machine (or ideally
+a second, clean PC) and walk through:
+
+- [ ] Installer completes; desktop + start-menu shortcuts appear
+- [ ] App opens in an Edge window with no address bar, no visible terminal
+- [ ] First run shows **Setup** → create database password + owner account
+- [ ] Login works; sidebar shows all sections for the owner
+- [ ] Create a staff account (Settings → Staff Management); log in as staff;
+      confirm Profit Projection / Entries / Settings are hidden
+- [ ] Enter a sale in Quick Bill; number appears in Recent Transactions
+- [ ] Close the app window; relaunch from the shortcut; data is still there
+- [ ] `%APPDATA%\FlourMill\flour-mill.db` exists and is **not** readable as
+      plain SQLite (it's encrypted)
+- [ ] Uninstall from Windows Settings; confirm `%APPDATA%\FlourMill` survives
 
 ---
 
-## Summary
+## Shipping it
 
-You now have:
+Two options:
 
-✅ Production-ready Windows installer  
-✅ Bundled with Node.js (no dependencies)  
-✅ Launches in Edge app mode (no browser UI)  
-✅ Database encrypted and local  
-✅ Updatable via GitHub Releases  
-✅ Professional installation experience  
-
-**Result**: Users can download and run your flour mill management system like any other Windows program. ✨
+- **USB stick** — copy the `.exe` to the mill PC and run it. Fine for the
+  first install.
+- **GitHub Release** — required for the in-app update button to work.
+  See [`Version_Controlling.md`](Version_Controlling.md) for the full
+  release + update workflow.
 
 ---
 
-**Questions?**
-- Check `docs/INSTALLATION.md` for user-facing guide
-- Check `docs/INSTALLER_NOTES.md` for technical details
-- Email: support@example.com
+## Troubleshooting the build
+
+| Problem | Fix |
+|---|---|
+| `build-installer.ps1` blocked from running | `Set-ExecutionPolicy -Scope Process Bypass`, then rerun |
+| "Inno Setup not found" | Install Inno Setup 6 to its default path |
+| Compile error: file not found `.node-runtime\*` | Step 4 skipped or extracted into a nested subfolder — `node.exe` must sit directly in `.node-runtime\` |
+| Compile error: file not found `.env` | Step 2 skipped |
+| Installed app opens a blank/error page | Run `node server.js` inside `C:\Program Files\FlourMill\` from a terminal and read the error it prints |
+| Login always fails on the installed app | `.env` missing from the build or `AUTH_SECRET` empty |
+| App can't save data | Check `%APPDATA%\FlourMill` is writable; don't install the data dir under Program Files |
+
+---
+
+## Rebuilding for a new version
+
+Short version: bump the version, build, publish a GitHub release. The full
+release discipline (version numbers, tags, what users see) is documented in
+[`Version_Controlling.md`](Version_Controlling.md).
