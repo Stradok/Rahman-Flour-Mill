@@ -14,13 +14,19 @@ Node.js bundled automatically).
 
 ## Install on Windows (quick start)
 
-On the target PC, open **PowerShell** (no admin needed) and run:
+On the target PC: press the **Windows key**, type `PowerShell`, press
+**Enter**. (Not Command Prompt — the window must say **Windows PowerShell**
+in its title, and the prompt must read `PS C:\...>`, with a `PS` at the
+front. If you don't see `PS`, you're in the wrong terminal and the commands
+below will not work.)
+
+No admin needed. Run:
 
 ```powershell
 winget install --id Git.Git -e
 ```
 
-Close and reopen PowerShell, then:
+Close and reopen PowerShell (same way — Windows key, type `PowerShell`), then:
 
 ```powershell
 git clone https://github.com/Stradok/Rahman-Flour-Mill.git "$env:LOCALAPPDATA\FlourMill\app"

@@ -12,13 +12,22 @@ alternative if you ever want a single distributable `.exe`).
 
 ## Install (on the mill PC)
 
-Open **PowerShell** (no admin needed) and run three commands:
+**Open PowerShell — not Command Prompt.** Press the **Windows key**, type
+`PowerShell`, press **Enter**. Check the window before typing anything: the
+title bar says **Windows PowerShell** and the prompt looks like
+`PS C:\Users\YourName>` — note the `PS` at the front. If the prompt is just
+`C:\Users\YourName>` with no `PS`, that is Command Prompt (`cmd.exe`) and
+the commands below will fail with confusing errors like
+`Invalid argument` or `path's format is not supported` — that error means
+"wrong terminal," not a real problem with the script.
+
+No admin rights needed. Run:
 
 ```powershell
 winget install --id Git.Git -e
 ```
 
-Close and reopen PowerShell (so `git` is on PATH), then:
+Close and reopen PowerShell the same way (so `git` is on PATH), then:
 
 ```powershell
 git clone https://github.com/Stradok/Rahman-Flour-Mill.git "$env:LOCALAPPDATA\FlourMill\app"
@@ -91,6 +100,7 @@ use the Inno installer path instead.
 
 | Problem | Fix |
 |---|---|
+| `fatal: could not create leading directories of '$env:LOCALAPPDATA\...': Invalid argument`, or `Processing -File '$env:LOCALAPPDATA\...' failed: ... path's format is not supported` | You're in **Command Prompt**, not PowerShell — cmd doesn't understand `$env:...` and passes it through literally. Close the window, open PowerShell instead (Windows key → type `PowerShell` → Enter; prompt must show `PS C:\...>`), and rerun the same commands |
 | `git` not recognized after winget | Close and reopen PowerShell (PATH refresh) |
 | Script exits at "git clone/fetch failed" | No internet, or GitHub unreachable — retry |
 | Node download fails | The script retries with a pinned version; if nodejs.org is blocked, download the `node-v22.x-win-x64.zip` manually and extract it to `%LOCALAPPDATA%\FlourMill\node` so `node.exe` sits directly inside |
